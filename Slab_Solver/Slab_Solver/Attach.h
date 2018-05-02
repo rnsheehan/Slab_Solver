@@ -43,9 +43,14 @@ static const double EPSILON = (8.85e-18); // Permittivity of free space in Farad
 static const double MU = (12.566e-13); // Permeability of free space in Henrys per micron
 static const double ETA = sqrt(MU / EPSILON); // Impedance of free space
 
+static const bool TE = true; // TE polarisation 
+static const bool TM = false; // TM polarisation
+
 #include "Templates.h"
 #include "Useful.h"
 
 #include "Slab_WG.h"
+
+#include "Test_Functions.h"
 
 #endif

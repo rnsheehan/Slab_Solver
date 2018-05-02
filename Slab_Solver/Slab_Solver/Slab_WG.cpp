@@ -522,9 +522,119 @@ void slab_tl_mode::compute_neff(bool mode)
 
 	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
 	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
-		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(15) << _beta(i, mode) << "\n";
+		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << "\n";
 	}
 	std::cout << "\n";
+}
+
+void slab_tl_mode::output_modes(bool mode, int N, double Lx, std::string &storage_directory)
+{
+	// This function will calculate the solutions corresponding to each mode and output them to a file for a single polarisation
+
+	double xi;
+
+	std::string filename;
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::ofstream write;
+
+	if (nbeta(mode) > 0) {
+
+		std::vector< std::vector< double > > mat;
+
+		mat.resize(nbeta(mode) + 2); // We want to output M solutions plus the corresponding positions
+
+		double dx = Lx / (static_cast<double>(N - 1));
+
+		xi = -0.5*Lx;
+
+		mat[0].resize(N + 2);
+
+		for (int j = 1; j <= N; j++) {
+			mat[0][j] = xi;
+			xi += dx;
+		}
+
+		for (int i = 1; i <= nbeta(mode); i++) {
+			mat[i].resize(N + 2);
+			for (int j = 1; j <= N; j++) {
+				mat[i][j] = TE_TM(mat[0][j], i - 1, mode);
+			}
+		}
+
+		// Output all the modes to a single file
+		filename = storage_directory + pol + "_Mode_Profiles.txt";
+		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+		if (write.is_open()) {
+
+			for (int i = 1; i <= N; i++) {
+				for (int j = 0; j<(nbeta(mode) + 1); j++)
+					if (j == nbeta(mode))
+						write << std::setprecision(20) << mat[j][i];
+					else
+						write << std::setprecision(20) << mat[j][i] << " , ";
+				write << "\n";
+			}
+
+			write.close();
+
+		}
+
+		// output the sine-cosine form of the dispersion equation
+		double db = ((upper - lower) / (100 - 1));
+
+		filename = storage_directory + pol + "_Dispersion_Eqn.txt";
+		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+		for (int i = 1; i<99; i++) {
+			write << lower + i * db << " , " << std::setprecision(20) << eigeneqn(lower + i * db, mode) << "\n";
+		}
+
+		write.close();
+	}
+}
+
+void slab_tl_mode::output_all_stats(std::string &storage_directory)
+{
+	//This function outputs all the stats associated with a particular calculation
+
+	std::string file;
+
+	file = storage_directory + "Slab_WG_Stats.txt";
+
+	std::ofstream stats;
+	stats.open(file.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+	stats << "Output File for the slab waveguide calculator\n";
+	stats << "\n";
+	stats << "Waveguide width = " << d << " microns\n";
+	stats << "Wavelength = " << l << " microns\n";
+	stats << "Wavenumber = " << k << " inverse microns\n";
+	stats << "\n";
+	stats << "Core Index = " << nc << "\n";
+	stats << "Substrate Index = " << ns << "\n";
+	stats << "Cladding Index = " << ncl << "\n";
+	stats << "\n";
+	stats << "Numerical Aperture = " << na << "\n";
+	stats << "V-Parameter = " << V << "\n";
+	stats << "Number of Modes = " << M << "\n";
+	stats << "\n";
+
+	if (nbeta(TE) > 0) {
+
+		output_stats(TE, stats);
+
+	}
+
+	if (nbeta(TM) > 0) {
+
+		output_stats(TM, stats);
+
+	}
+
+	stats.close();
 }
 
 double slab_tl_mode::g1(int i, bool t)
@@ -828,6 +938,53 @@ double slab_tl_mode::TE_TM(double x, int i, bool mode)
 	catch (std::invalid_argument &e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_tl_mode::output_stats(bool mode, std::ofstream &file_obj)
+{
+	// output the results for a particular polarisation
+	// R. Sheehan 18 - 7 - 2014
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	if (file_obj.is_open()) {
+
+		file_obj << pol << " Modes\n";
+		file_obj << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
+
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << pol + "_{" << i + 1 << "} = " << std::setprecision(10) << _beta(i, mode) << " , n_eff_{" << i + 1 << "} = " << std::setprecision(10) << (_beta(i, mode) / k) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "Confinement Factor " << i + 1 << " = " << std::setprecision(10) << conf_fact(i, mode) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "Normalisation Constant " << i + 1 << " = " << std::setprecision(10) << norm_const(i, mode) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "Phase " << i + 1 << " = " << std::setprecision(10) << phase(i, mode) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "Effective Width " << i + 1 << " = " << std::setprecision(10) << deff(i, mode) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "h_" << i + 1 << " = " << std::setprecision(10) << h(i, mode) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "p_" << i + 1 << " = " << std::setprecision(10) << p(i, mode) << "\n";
+		}
+		file_obj << "\n";
+		for (int i = 0; i<nbeta(mode); i++) {
+			file_obj << "q_" << i + 1 << " = " << std::setprecision(10) << q(i, mode) << "\n";
+		}
+		file_obj << "\n";
 	}
 }
 

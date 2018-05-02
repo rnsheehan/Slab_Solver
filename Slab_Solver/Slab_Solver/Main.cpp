@@ -9,6 +9,8 @@
 int main()
 {
 
+	testing::slab_wg_mode_calc(); 
+
 	std::cout << "Press return to close\n";
 	std::cin.get(); 
 	return 0; 

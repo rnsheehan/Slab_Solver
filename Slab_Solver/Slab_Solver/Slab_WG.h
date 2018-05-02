@@ -99,7 +99,9 @@ public:
 
 	void compute_neff(bool mode);
 
-	// Add methods for calculating optical mode shapes and outputting solutions to file
+	void output_all_stats(std::string &storage_directory); 
+
+	void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
 
 private:
 	// Functions needed to compute the shape of the waveguide mode
@@ -119,6 +121,7 @@ private:
 
 	double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
 	
+	void output_stats(bool mode, std::ofstream &file_obj); // write computed mode statistics to a file
 };
 
 class slab_fl : protected slab {
