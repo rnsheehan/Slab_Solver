@@ -12,7 +12,7 @@ public:
 	// Deconstructor
 	~slab();
 
-protected: 
+protected:	
 	int nbeta(bool mode); // get the number of computed modes in a waveguide
 
 	double h(int i, bool t); // wavenumber in core
@@ -22,6 +22,8 @@ protected:
 	double q(int i, bool t); // wavenumber in cladding
 
 	double r(int i, bool t); // wavenumber in rib
+
+	double _beta(int i, bool t); // return the computed propagation constants
 
 protected:
 	// protected members, only to be accessed through derived classes
@@ -65,16 +67,41 @@ protected:
 
 // Three Layer Slab
 
-class slab_tl : slab {
+class slab_tl_neff : protected slab {
+	// class which is used to compute the effective indices of a three layer slab waveguide
 public:
 	// Constructor
-	slab_tl(double width, double lambda, double ncore, double nsub, double nclad);
+	slab_tl_neff(void); 
 
-	void set_params(double width, double lambda, double ncore, double nsub, double nclad);
+	slab_tl_neff(double width, double lambda, double ncore, double nsub, double nclad);
+
+	void set_params(double width, double lambda, double ncore, double nsub, double nclad); // assign the parameters needed to perform the neff_search calculation
+
+	void neff_search(bool mode); // compute the effective indices for a waveguide
 
 private:
 	// methods that the user does not need access to
 
+	double eigeneqn_3(double x, bool t, int mm); // Non-linear equation for the propagation constants
+
+	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_3
+
+private:
+	double g; // Asymmetry factor
+};
+
+// What's the best way to ensure that slab_tl_mode has access to all the same parameters?
+
+class slab_tl_mode : public slab_tl_neff {
+	// class which is used to compute the shapes of optical modes in a three layer slab
+public:
+	slab_tl_mode(void); 
+
+	slab_tl_mode(double width, double lambda, double ncore, double nsub, double nclad);
+
+	void compute_neff(bool mode);
+
+private:
 	// Functions needed to compute the shape of the waveguide mode
 	double g1(int i, bool t);
 
@@ -92,13 +119,8 @@ private:
 
 	double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
 
-	double eigeneqn_3(double x, bool t, int mm); // Non-linear equation for the propagation constants
-
-	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_3
-
 private:
-	double g; // Asymmetry factor
-
+	
 };
 
 class slab_fl : slab {
