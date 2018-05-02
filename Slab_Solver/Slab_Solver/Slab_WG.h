@@ -90,8 +90,6 @@ private:
 	double g; // Asymmetry factor
 };
 
-// What's the best way to ensure that slab_tl_mode has access to all the same parameters?
-
 class slab_tl_mode : public slab_tl_neff {
 	// class which is used to compute the shapes of optical modes in a three layer slab
 public:
@@ -100,6 +98,8 @@ public:
 	slab_tl_mode(double width, double lambda, double ncore, double nsub, double nclad);
 
 	void compute_neff(bool mode);
+
+	// Add methods for calculating optical mode shapes and outputting solutions to file
 
 private:
 	// Functions needed to compute the shape of the waveguide mode
@@ -118,12 +118,10 @@ private:
 	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
 
 	double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
-
-private:
 	
 };
 
-class slab_fl : slab {
+class slab_fl : protected slab {
 		
 
 };
