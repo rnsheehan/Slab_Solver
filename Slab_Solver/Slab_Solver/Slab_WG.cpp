@@ -4,17 +4,17 @@
 
 // Definitions for the slab base class
 
-slab::slab()
+slab::slab(void)
 {
 	// Default Constructor
 	M = 0;
 
-	k_sqr = nc_sqr = ncl_sqr = ns_sqr = nr_sqr = k_sqr_nc_sqr = k_sqr_ns_sqr = k_sqr_ncl_sqr = k_sqr_nr_sqr = 0.0;
-	aa = bb = d = l = nc = ns = ncl = nr = 0.0;
+	k_sqr = nc_sqr = ncl_sqr = ns_sqr = nr_sqr = nm_sqr = k_sqr_nc_sqr = k_sqr_ns_sqr = k_sqr_ncl_sqr = k_sqr_nr_sqr = 0.0;
+	aa = bb = d = dr = l = nc = ns = ncl = nr = nm = etacr = etacs = etarcl = 0.0;
 	V = na = k = lower = upper = upper = w = efieldint = hfieldint = 0.0;
 }
 
-slab::~slab()
+slab::~slab(void)
 {
 	// Deconstructor
 	betaE.clear();
@@ -208,6 +208,13 @@ double slab::_beta(int i, bool t)
 	}
 }
 
+double slab::test_ptr(double(*f)(int, int), int a, int b)
+{
+	// testing to see if I can pass pointers to member functions in derived classes
+
+	return (*f)(a, b); 
+}
+
 // Definitions for the three layer slab derived class
 slab_tl_neff::slab_tl_neff(void)
 {
@@ -256,20 +263,17 @@ void slab_tl_neff::set_params(double width, double lambda, double ncore, double 
 			k_sqr = template_funcs::DSQR(k); // k_{0}^{2}
 
 			k_sqr_nc_sqr = k_sqr * nc_sqr; // k_{0}^{2} n_{c}^{2}
-			k_sqr_ns_sqr = k_sqr * ns_sqr; // k_{0}^{2} n_{c}^{2}
-			k_sqr_ncl_sqr = k_sqr * ncl_sqr; // k_{0}^{2} n_{c}^{2}
+			k_sqr_ns_sqr = k_sqr * ns_sqr; // k_{0}^{2} n_{s}^{2}
+			k_sqr_ncl_sqr = k_sqr * ncl_sqr; // k_{0}^{2} n_{cl}^{2}
 
 			double x = nc_sqr - ns_sqr;
 			double y = ns_sqr - ncl_sqr;
 
 			// WG asymmetry paramater
-			// g = ( template_funcs::DSQR(ns) - template_funcs::DSQR(ncl) )/( template_funcs::DSQR(nc) - template_funcs::DSQR(ns) );
 			g = y > 0.0 ? (y / x) : 0.0;
 
-			// na = sqrt( template_funcs::DSQR(nc) - template_funcs::DSQR(ns) );
 			na = sqrt(x); // numerical aperture
 
-			//V = ( PI*d*sqrt( template_funcs::DSQR(nc) - template_funcs::DSQR(ns) ) ) / l;
 			V = (PI*d*na) / l; // V-parameter
 
 			// predicted number of modes
@@ -454,6 +458,12 @@ double slab_tl_neff::zbrent(double x1, double x2, double tol, bool t, int mm)
 	}
 }
 
+double slab_tl_neff::test_pass(int a, int b)
+{
+	// test function for passing to other member function
+	return (a + b); 
+}
+
 void slab_tl_neff::neff_search(bool mode)
 {
 	//This version solves the standard slab dispersion equation with a superior root finder
@@ -498,6 +508,16 @@ void slab_tl_neff::neff_search(bool mode)
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
+}
+
+void slab_tl_neff::test_call(bool mode)
+{
+	// test to see if I can pass a member function to a function in a base class
+
+	int a = 4; 
+	int b = 5; 
+
+	std::cout << test_ptr((*test_pass), a, b) << std::endl;
 }
 
 // Definitions for the three layer slab with optical mode profile calculation
@@ -989,9 +1009,186 @@ void slab_tl_mode::output_stats(bool mode, std::ofstream &file_obj)
 }
 
 // Definitions for the four layer slab derived class
-// Type 1
+
+slab_fl_neff::slab_fl_neff()
+{
+	// Default Constructor
+}
+
+slab_fl_neff::slab_fl_neff(double width, double lambda, double ncore, double nsub, double nclad, double nrib)
+{
+	// Constructor
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+
+	set_params(width, lambda, ncore, nsub, nclad, nrib); 
+}
+
+void slab_fl_neff::set_params(double width, double lambda, double ncore, double nsub, double nclad, double nrib)
+{
+	// set parameters for four layer slab
+	
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+
+	try {
+		bool c1 = width > 0.0 ? true : false;
+		bool c2 = lambda > 0.0 ? true : false;
+		bool c3 = nclad >= 1.0 ? true : false;
+		bool c4 = nsub >= 1.0 ? true : false;
+		bool c6 = nrib >= 1.0 ? true : false;
+		bool c5 = ncore > std::max(nsub, nclad) ? true : false;
+		bool c7 = ncore > std::max(nsub, nrib) ? true : false;
+
+		if (c1 && c2 && c3 && c4 && c5 && c6 && c7) {
+
+			d = width;
+
+			l = lambda;
+
+			nc = ncore;
+			nc_sqr = template_funcs::DSQR(nc);
+
+			nr = nrib;
+			nr_sqr = template_funcs::DSQR(nr);
+
+			ns = std::max(nsub, nclad);
+			ns_sqr = template_funcs::DSQR(ns);
+
+			ncl = std::min(nsub, nclad);
+			ncl_sqr = template_funcs::DSQR(ncl);
+
+			nm = std::max(ns, nr);
+			nm_sqr = template_funcs::DSQR(nm);
+			
+			k = Two_PI / l;
+			k_sqr = template_funcs::DSQR(k); // k_{0}^{2}
+
+			k_sqr_nc_sqr = k_sqr * nc_sqr; // k_{0}^{2} n_{c}^{2}
+			k_sqr_ns_sqr = k_sqr * ns_sqr; // k_{0}^{2} n_{s}^{2}
+			k_sqr_ncl_sqr = k_sqr * ncl_sqr; // k_{0}^{2} n_{cl}^{2}
+			k_sqr_nr_sqr = k_sqr * nr_sqr; // k_{0}^{2} n_{r}^{2}
+
+			etacs = nc_sqr / ns_sqr;
+			etacr = nc_sqr / nr_sqr;
+			etarcl = nr_sqr / ncl_sqr;
+
+			double x = nc_sqr - nm_sqr;
+			double y = ns_sqr - ncl_sqr;
+
+			na = sqrt(x); // numerical aperture
+
+			V = (PI*d*na) / l; // V-parameter
+
+			// predicted number of modes
+			M = static_cast<int>( std::max( 1.0, ceil( (2.0*V / PI) ) ) );
+
+			lower = k * nm; // lower bound of search space
+
+			upper = k * nc; // upper bound of search space
+
+			w = k * SPEED_OF_LIGHT;
+
+			efieldint = 0.5*EPSILON*SPEED_OF_LIGHT;
+
+			hfieldint = 0.5*MU*SPEED_OF_LIGHT;
+
+			// Empty the std::vector each time a new instance of the class is called
+			betaE.clear();
+			betaH.clear();
+
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff::set_params(double width,double lambda,double ncore,double nsub,double nclad)\n";
+			if (!c1) reason += "WG width = " + template_funcs::toString(width, 3) + " is negative\n";
+			if (!c2) reason += "Wavelength = " + template_funcs::toString(lambda, 3) + " is negative\n";
+			if (!c3) reason += "Cladding Index = " + template_funcs::toString(nclad, 3) + " is less than one\n";
+			if (!c4) reason += "Substrate Index = " + template_funcs::toString(nsub, 3) + " is less than one\n";
+			if (!c6) reason += "Rib Index = " + template_funcs::toString(nrib, 3) + " is less than one\n";
+			if (!c5) reason += "Core Index = " + template_funcs::toString(ncore, 3) + " is less than cladding / substrate index\n";
+			if (!c7) reason += "Core Index = " + template_funcs::toString(ncore, 3) + " is less than rib / substrate index\n";
+
+			throw std::invalid_argument(reason);
+		}
+
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_neff::eigeneqn_a(double x, int mm, bool t)
+{
+	// Dispersion equation corresponding to case a from Adams
+	
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	double h, p, q, r, tmp;
+
+	double x_sqr = template_funcs::DSQR(x);
+
+	tmp = k_sqr_nc_sqr - x_sqr;
+	h = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+	tmp = k_sqr_nr_sqr - x_sqr;
+	r = (tmp>0 ? sqrt(tmp) : 0.0);
+
+	tmp = x_sqr - k_sqr_ns_sqr;
+	p = (tmp>0 ? sqrt(tmp) : 0.0);
+
+	tmp = x_sqr - k_sqr_ncl_sqr;
+	q = (tmp>0 ? sqrt(tmp) : 0.0);
+
+	if (t) {//TE modes
+		return d * h - atan((p / h)) - atan((r / h)*tan(atan(q / r) - dr * r)) - mm * PI;
+	}
+	else {//TM modes
+		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*tan(atan(etarcl*(q / r)) - dr * r)) - mm * PI;
+	}
+}
+
+double slab_fl_neff::eigeneqn_b(double x, int mm, bool t)
+{
+	//Dispersion equation corresponding to case b from Adams
+	//This means that the field oscillates in the core only	
+	//This is an alternative form that produces the correct solutions
+
+	double h, p, q, r, tmp;
 
 
+	tmp = DSQR(k)*DSQR(nc) - x * x;
+	h = (tmp>0 ? sqrt(tmp) : 0.0);
 
-// Definitions for the four layer slab derived class
-// Type 2
+	tmp = x * x - DSQR(k)*DSQR(ns);
+	p = (tmp>0 ? sqrt(tmp) : 0.0);
+
+	tmp = x * x - DSQR(k)*DSQR(ncl);
+	q = (tmp>0 ? sqrt(tmp) : 0.0);
+
+	tmp = x * x - DSQR(k)*DSQR(nr);
+	r = (tmp>0 ? sqrt(tmp) : 0.0);
+
+	double v = ((r - q) / (r + q));
+	double v1 = exp(-2.0*r*dr);
+	double v2den = (1 + v * v1);
+	double v2 = (v2den>0.0 ? (1 - v * v1) / v2den : 10.0);
+	double etacs = DSQR(nc / ns);
+	double etacr = DSQR(nc / nr);
+	double etarcl = DSQR(nr / ncl);
+
+	if (t) {//TE modes
+		return d * h - atan((p / h)) - atan((r / h)*v2) - mm * PI;
+	}
+	else {//TM modes
+		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*v2) - mm * PI;
+	}
+}

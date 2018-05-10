@@ -7,10 +7,10 @@
 class slab {
 public:
 	// Constructors
-	slab();
+	slab(void);
 
 	// Deconstructor
-	~slab();
+	~slab(void);
 
 protected:	
 	int nbeta(bool mode); // get the number of computed modes in a waveguide
@@ -25,15 +25,19 @@ protected:
 
 	double _beta(int i, bool t); // return the computed propagation constants
 
+	double test_ptr(double(*f)(int, int), int a, int b); 
+
 protected:
 	// protected members, only to be accessed through derived classes
 	int M; // Predicted number of modes that waveguide can support
 
 	double d; // Waveguide Width
+	double dr; // Rib Width
 	double nc; // Core Index
 	double ncl; // Cladding Index
 	double ns; // Substrate Index
 	double nr; // Rib Index, only used by Four layer slab
+	double nm; // nm = Max(nr,ns)
 
 	double l; // Wavelength
 	double V; // V-parameter
@@ -51,10 +55,15 @@ protected:
 	double nc_sqr; // n_{c}^{2}
 	double ns_sqr; // n_{s}^{2}
 	double ncl_sqr; // n_{cl}^{2}
-	double nr_sqr; // n_{cl}^{2}
+	double nr_sqr; // n_{r}^{2}
+	double nm_sqr; // n_{m}^{2}
 
 	double aa; // ratio of (nc / ns)^{2}
 	double bb; // ratio of (nc / ncl)^{2}
+
+	double etacs; // n_{c}^{2} / n_{s}^{2}
+	double etacr; // n_{c}^{2} / n_{r}^{2}
+	double etarcl; // n_{r}^{2} / n_{cl}^{2}
 
 	double k_sqr_nc_sqr; // k_{0}^{2} n_{c}^{2}
 	double k_sqr_ns_sqr; // k_{0}^{2} n_{s}^{2}
@@ -79,12 +88,20 @@ public:
 
 	void neff_search(bool mode); // compute the effective indices for a waveguide
 
+	void test_call(bool mode); // test to see if I can pass a member function to a function in a base class
+
 private:
 	// methods that the user does not need access to
 
 	double eigeneqn_3(double x, bool t, int mm); // Non-linear equation for the propagation constants
 
 	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_3
+
+	// trying to figure out a way to declare and define zbrent in the base class so that it can be used in the derived classes
+	// thus want to be able to pass eigeneqn_3 as a parameter to zbrent, similarly for fl class
+	// want call in neff_search to be something like zbrent(eigeneqn_3(), x1, x2, tol, t, mm)
+	// this would be better than having multiple copies of zbrent
+	static double test_pass(int a, int b); 
 
 private:
 	double g; // Asymmetry factor
@@ -124,9 +141,24 @@ private:
 	void output_stats(bool mode, std::ofstream &file_obj); // write computed mode statistics to a file
 };
 
-class slab_fl : protected slab {
-		
+// Four Layer Slab
 
+class slab_fl_neff : protected slab {
+	// class which is used to compute the effective indices in a Case A four layer slab
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+public:
+	// Constructors
+	slab_fl_neff(void); 
+
+	slab_fl_neff(double width, double lambda, double ncore, double nsub, double nclad, double nrib);
+
+	// Methods
+	void set_params(double width, double lambda, double ncore, double nsub, double nclad, double nrib);
+
+private:
+	double eigeneqn_a(double x, int mm, bool t); 
+	double eigeneqn_b(double x, int mm, bool t);
 };
 
 #endif

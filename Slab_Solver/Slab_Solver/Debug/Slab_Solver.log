@@ -1,2 +1,12 @@
-﻿  Test_Functions.cpp
-  Slab_Solver.vcxproj -> C:\Users\Robert\Programming\C++\Slab_Solver\Slab_Solver\Debug\Slab_Solver.exe
+﻿  Main.cpp
+  Slab_WG.cpp
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1168): error C3861: 'DSQR': identifier not found
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1171): error C3861: 'DSQR': identifier not found
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1174): error C3861: 'DSQR': identifier not found
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1177): error C3861: 'DSQR': identifier not found
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1184): error C3861: 'DSQR': identifier not found
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1185): error C3861: 'DSQR': identifier not found
+c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\slab_wg.cpp(1186): error C3861: 'DSQR': identifier not found
+  Test_Functions.cpp
+  Useful.cpp
+  Generating Code...
