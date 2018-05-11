@@ -208,13 +208,6 @@ double slab::_beta(int i, bool t)
 	}
 }
 
-double slab::test_ptr(double(*f)(int, int), int a, int b)
-{
-	// testing to see if I can pass pointers to member functions in derived classes
-
-	return (*f)(a, b); 
-}
-
 // Definitions for the three layer slab derived class
 slab_tl_neff::slab_tl_neff(void)
 {
@@ -317,6 +310,7 @@ double slab_tl_neff::eigeneqn_3(double x, bool t, int mm)
 
 	try {
 
+		
 		if (k_sqr_nc_sqr > k_sqr_ns_sqr) {
 
 			double h, p, q, tmp;
@@ -458,12 +452,6 @@ double slab_tl_neff::zbrent(double x1, double x2, double tol, bool t, int mm)
 	}
 }
 
-double slab_tl_neff::test_pass(int a, int b)
-{
-	// test function for passing to other member function
-	return (a + b); 
-}
-
 void slab_tl_neff::neff_search(bool mode)
 {
 	//This version solves the standard slab dispersion equation with a superior root finder
@@ -480,8 +468,9 @@ void slab_tl_neff::neff_search(bool mode)
 			std::vector<double> vec;
 
 			for (m = 0; m < M; m++) {
-				b = zbrent(lower, upper, EPS, mode, m);
-
+				//b = zbrent((*eigeneqn_3), lower, upper, EPS, mode, m);
+				b = zbrent(lower, upper, EPS, mode, m); 
+				
 				if (b>lower && b<upper) {
 					vec.push_back(b);
 				}
@@ -508,16 +497,6 @@ void slab_tl_neff::neff_search(bool mode)
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
-}
-
-void slab_tl_neff::test_call(bool mode)
-{
-	// test to see if I can pass a member function to a function in a base class
-
-	int a = 4; 
-	int b = 5; 
-
-	std::cout << test_ptr((*test_pass), a, b) << std::endl;
 }
 
 // Definitions for the three layer slab with optical mode profile calculation
@@ -1125,70 +1104,70 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 	}
 }
 
-double slab_fl_neff::eigeneqn_a(double x, int mm, bool t)
-{
-	// Dispersion equation corresponding to case a from Adams
-	
-	// Case A => Field Oscillating in Core and Ridge
-	// For there to be a solution one has to have ns <= ncl < nr < nc
-
-	double h, p, q, r, tmp;
-
-	double x_sqr = template_funcs::DSQR(x);
-
-	tmp = k_sqr_nc_sqr - x_sqr;
-	h = (tmp > 0 ? sqrt(tmp) : 0.0);
-
-	tmp = k_sqr_nr_sqr - x_sqr;
-	r = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	tmp = x_sqr - k_sqr_ns_sqr;
-	p = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	tmp = x_sqr - k_sqr_ncl_sqr;
-	q = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	if (t) {//TE modes
-		return d * h - atan((p / h)) - atan((r / h)*tan(atan(q / r) - dr * r)) - mm * PI;
-	}
-	else {//TM modes
-		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*tan(atan(etarcl*(q / r)) - dr * r)) - mm * PI;
-	}
-}
-
-double slab_fl_neff::eigeneqn_b(double x, int mm, bool t)
-{
-	//Dispersion equation corresponding to case b from Adams
-	//This means that the field oscillates in the core only	
-	//This is an alternative form that produces the correct solutions
-
-	double h, p, q, r, tmp;
-
-
-	tmp = DSQR(k)*DSQR(nc) - x * x;
-	h = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	tmp = x * x - DSQR(k)*DSQR(ns);
-	p = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	tmp = x * x - DSQR(k)*DSQR(ncl);
-	q = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	tmp = x * x - DSQR(k)*DSQR(nr);
-	r = (tmp>0 ? sqrt(tmp) : 0.0);
-
-	double v = ((r - q) / (r + q));
-	double v1 = exp(-2.0*r*dr);
-	double v2den = (1 + v * v1);
-	double v2 = (v2den>0.0 ? (1 - v * v1) / v2den : 10.0);
-	double etacs = DSQR(nc / ns);
-	double etacr = DSQR(nc / nr);
-	double etarcl = DSQR(nr / ncl);
-
-	if (t) {//TE modes
-		return d * h - atan((p / h)) - atan((r / h)*v2) - mm * PI;
-	}
-	else {//TM modes
-		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*v2) - mm * PI;
-	}
-}
+//double slab_fl_neff::eigeneqn_a(double x, int mm, bool t)
+//{
+//	// Dispersion equation corresponding to case a from Adams
+//	
+//	// Case A => Field Oscillating in Core and Ridge
+//	// For there to be a solution one has to have ns <= ncl < nr < nc
+//
+//	double h, p, q, r, tmp;
+//
+//	double x_sqr = template_funcs::DSQR(x);
+//
+//	tmp = k_sqr_nc_sqr - x_sqr;
+//	h = (tmp > 0 ? sqrt(tmp) : 0.0);
+//
+//	tmp = k_sqr_nr_sqr - x_sqr;
+//	r = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	tmp = x_sqr - k_sqr_ns_sqr;
+//	p = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	tmp = x_sqr - k_sqr_ncl_sqr;
+//	q = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	if (t) {//TE modes
+//		return d * h - atan((p / h)) - atan((r / h)*tan(atan(q / r) - dr * r)) - mm * PI;
+//	}
+//	else {//TM modes
+//		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*tan(atan(etarcl*(q / r)) - dr * r)) - mm * PI;
+//	}
+//}
+//
+//double slab_fl_neff::eigeneqn_b(double x, int mm, bool t)
+//{
+//	//Dispersion equation corresponding to case b from Adams
+//	//This means that the field oscillates in the core only	
+//	//This is an alternative form that produces the correct solutions
+//
+//	double h, p, q, r, tmp;
+//
+//
+//	tmp = DSQR(k)*DSQR(nc) - x * x;
+//	h = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	tmp = x * x - DSQR(k)*DSQR(ns);
+//	p = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	tmp = x * x - DSQR(k)*DSQR(ncl);
+//	q = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	tmp = x * x - DSQR(k)*DSQR(nr);
+//	r = (tmp>0 ? sqrt(tmp) : 0.0);
+//
+//	double v = ((r - q) / (r + q));
+//	double v1 = exp(-2.0*r*dr);
+//	double v2den = (1 + v * v1);
+//	double v2 = (v2den>0.0 ? (1 - v * v1) / v2den : 10.0);
+//	double etacs = DSQR(nc / ns);
+//	double etacr = DSQR(nc / nr);
+//	double etarcl = DSQR(nr / ncl);
+//
+//	if (t) {//TE modes
+//		return d * h - atan((p / h)) - atan((r / h)*v2) - mm * PI;
+//	}
+//	else {//TM modes
+//		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*v2) - mm * PI;
+//	}
+//}

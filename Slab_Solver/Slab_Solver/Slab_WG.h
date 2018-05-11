@@ -25,8 +25,6 @@ protected:
 
 	double _beta(int i, bool t); // return the computed propagation constants
 
-	double test_ptr(double(*f)(int, int), int a, int b); 
-
 protected:
 	// protected members, only to be accessed through derived classes
 	int M; // Predicted number of modes that waveguide can support
@@ -96,12 +94,6 @@ private:
 	double eigeneqn_3(double x, bool t, int mm); // Non-linear equation for the propagation constants
 
 	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_3
-
-	// trying to figure out a way to declare and define zbrent in the base class so that it can be used in the derived classes
-	// thus want to be able to pass eigeneqn_3 as a parameter to zbrent, similarly for fl class
-	// want call in neff_search to be something like zbrent(eigeneqn_3(), x1, x2, tol, t, mm)
-	// this would be better than having multiple copies of zbrent
-	static double test_pass(int a, int b); 
 
 private:
 	double g; // Asymmetry factor

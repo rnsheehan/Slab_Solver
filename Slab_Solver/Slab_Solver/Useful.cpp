@@ -113,3 +113,8 @@ void useful_funcs::read_into_vector(std::string &filename, std::vector<double> &
 		exit(EXIT_FAILURE); 
 	}
 }
+
+//double useful_funcs::test_func(double (*f)(int, int), int a, int b)
+//{
+//	return (*f)(a, b); 
+//}
