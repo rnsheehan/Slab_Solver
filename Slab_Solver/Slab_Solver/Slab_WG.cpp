@@ -1305,6 +1305,11 @@ void slab_fl_neff_A::neff_search(bool mode)
 	}
 }
 
+slab_fl_mode_A::slab_fl_mode_A()
+{
+	// Default
+}
+
 slab_fl_neff_B::slab_fl_neff_B()
 {
 	// Default Constructor
@@ -1633,4 +1638,9 @@ void slab_fl_neff_B::neff_search(bool mode)
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
+}
+
+slab_fl_mode_B::slab_fl_mode_B()
+{
+	// Default
 }

@@ -159,6 +159,12 @@ private:
 	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_a
 };
 
+class slab_fl_mode_A : public slab_fl_neff_A {
+public: 
+	slab_fl_mode_A(void); 
+
+};
+
 class slab_fl_neff_B : protected slab {
 	// class which is used to compute the effective indices in a Case B four layer slab
 
@@ -182,6 +188,12 @@ private:
 	double eigeneqn_b(double x, int mm, bool t);
 
 	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_b
+};
+
+class slab_fl_mode_B : public slab_fl_neff_B {
+public:
+	slab_fl_mode_B(void);
+
 };
 
 #endif
