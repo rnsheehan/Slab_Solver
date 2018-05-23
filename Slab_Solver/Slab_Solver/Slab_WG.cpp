@@ -10,7 +10,7 @@ slab::slab(void)
 	M = 0;
 
 	k_sqr = nc_sqr = ncl_sqr = ns_sqr = nr_sqr = nm_sqr = k_sqr_nc_sqr = k_sqr_ns_sqr = k_sqr_ncl_sqr = k_sqr_nr_sqr = 0.0;
-	aa = bb = d = dr = l = nc = ns = ncl = nr = nm = etacr = etacs = etarcl = 0.0;
+	k_sqr_nm_sqr = aa = bb = d = dr = l = nc = ns = ncl = nr = nm = etacr = etacs = etarcl = 0.0;
 	V = na = k = lower = upper = upper = w = efieldint = hfieldint = 0.0;
 }
 
@@ -309,7 +309,6 @@ double slab_tl_neff::eigeneqn_3(double x, bool t, int mm)
 	// which you would have to do if you used eigeneqn
 
 	try {
-
 		
 		if (k_sqr_nc_sqr > k_sqr_ns_sqr) {
 
@@ -468,7 +467,6 @@ void slab_tl_neff::neff_search(bool mode)
 			std::vector<double> vec;
 
 			for (m = 0; m < M; m++) {
-				//b = zbrent((*eigeneqn_3), lower, upper, EPS, mode, m);
 				b = zbrent(lower, upper, EPS, mode, m); 
 				
 				if (b>lower && b<upper) {
@@ -989,25 +987,22 @@ void slab_tl_mode::output_stats(bool mode, std::ofstream &file_obj)
 
 // Definitions for the four layer slab derived class
 
-slab_fl_neff::slab_fl_neff()
+slab_fl_neff_A::slab_fl_neff_A()
 {
 	// Default Constructor
 }
 
-slab_fl_neff::slab_fl_neff(double width, double lambda, double ncore, double nsub, double nclad, double nrib)
+slab_fl_neff_A::slab_fl_neff_A(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib)
 {
 	// Constructor
 
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
 
-	// Case B: Field Oscillating in Core Only
-	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
-
-	set_params(width, lambda, ncore, nsub, nclad, nrib); 
+	set_params(width, rib_width, lambda, ncore, nsub, nclad, nrib);
 }
 
-void slab_fl_neff::set_params(double width, double lambda, double ncore, double nsub, double nclad, double nrib)
+void slab_fl_neff_A::set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib)
 {
 	// set parameters for four layer slab
 	
@@ -1019,6 +1014,7 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 
 	try {
 		bool c1 = width > 0.0 ? true : false;
+		bool c1a = rib_width > 0.0 ? true : false; 
 		bool c2 = lambda > 0.0 ? true : false;
 		bool c3 = nclad >= 1.0 ? true : false;
 		bool c4 = nsub >= 1.0 ? true : false;
@@ -1026,9 +1022,11 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 		bool c5 = ncore > std::max(nsub, nclad) ? true : false;
 		bool c7 = ncore > std::max(nsub, nrib) ? true : false;
 
-		if (c1 && c2 && c3 && c4 && c5 && c6 && c7) {
+		if (c1 && c1a && c2 && c3 && c4 && c5 && c6 && c7) {
 
 			d = width;
+
+			dr = rib_width; 
 
 			l = lambda;
 
@@ -1054,10 +1052,333 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 			k_sqr_ns_sqr = k_sqr * ns_sqr; // k_{0}^{2} n_{s}^{2}
 			k_sqr_ncl_sqr = k_sqr * ncl_sqr; // k_{0}^{2} n_{cl}^{2}
 			k_sqr_nr_sqr = k_sqr * nr_sqr; // k_{0}^{2} n_{r}^{2}
+			k_sqr_nm_sqr = k_sqr * nm_sqr; // k_{0}^{2} n_{m}^{2}
 
 			etacs = nc_sqr / ns_sqr;
 			etacr = nc_sqr / nr_sqr;
 			etarcl = nr_sqr / ncl_sqr;
+
+			// Only difference between A, B cases is search space for neff and eigenequation
+			// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+			// Case B: lower = k nm, upper - k nc, NA^{2} = nc^{2} - nm^{2}
+
+			double x = nr_sqr - ncl_sqr;
+
+			na = sqrt(x); // numerical aperture
+
+			V = (PI*d*na) / l; // V-parameter
+
+			// predicted number of modes
+			M = static_cast<int>( std::max( 1.0, ceil( (2.0*V / PI) ) ) );
+
+			lower = k * ncl; // lower bound of search space
+
+			upper = k * nr; // upper bound of search space
+
+			w = k * SPEED_OF_LIGHT;
+
+			efieldint = 0.5*EPSILON*SPEED_OF_LIGHT;
+
+			hfieldint = 0.5*MU*SPEED_OF_LIGHT;
+
+			// Empty the std::vector each time a new instance of the class is called
+			betaE.clear();
+			betaH.clear();
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_A::set_params(double width,double lambda,double ncore,double nsub,double nclad)\n";
+			if (!c1) reason += "WG width = " + template_funcs::toString(width, 3) + " is negative\n";
+			if (!c2) reason += "Wavelength = " + template_funcs::toString(lambda, 3) + " is negative\n";
+			if (!c3) reason += "Cladding Index = " + template_funcs::toString(nclad, 3) + " is less than one\n";
+			if (!c4) reason += "Substrate Index = " + template_funcs::toString(nsub, 3) + " is less than one\n";
+			if (!c6) reason += "Rib Index = " + template_funcs::toString(nrib, 3) + " is less than one\n";
+			if (!c5) reason += "Core Index = " + template_funcs::toString(ncore, 3) + " is less than cladding / substrate index\n";
+			if (!c7) reason += "Core Index = " + template_funcs::toString(ncore, 3) + " is less than rib / substrate index\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)
+{
+	// Dispersion equation corresponding to case a from Adams
+	
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	try{
+		if (k_sqr_nr_sqr > k_sqr_ncl_sqr) {
+
+			double h, p, q, r, tmp;
+
+			double x_sqr = template_funcs::DSQR(x);
+
+			tmp = k_sqr_nc_sqr - x_sqr;
+			h = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = k_sqr_nr_sqr - x_sqr;
+			r = (tmp>0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_ns_sqr;
+			p = (tmp>0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_ncl_sqr;
+			q = (tmp>0 ? sqrt(tmp) : 0.0);
+
+			if (t) {//TE modes
+				return (d * h) - atan( (p / h) ) - atan( (r / h) * tan( atan(q / r) - (dr * r) ) ) - mm * PI;
+			}
+			else {//TM modes
+				return (d * h) - atan( etacs*(p / h) ) - atan( etacr * (r / h) * tan( atan( etarcl*(q / r) ) - (dr * r) ) ) - mm * PI;
+			}
+		}
+		else {
+			std::string reason = "Error: double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)\n";
+			reason += "Input parameters not correctly defined\n";
+			reason += "k_{0}^{2} n_{c}^{2} = " + template_funcs::toString(k_sqr_nc_sqr) + ", k_{0}^{2} n_{r}^{2} = " + template_funcs::toString(k_sqr_nr_sqr) + "\n";
+			return 0;
+		}	
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
+{
+	//Find the root of the function between x1 and x2 using brent's method
+	//The root is refined to +/- tol
+	//Seemingly one of the best methods to use
+
+	//This will be used to compute the roots of eigeneq_b
+	//R. Sheehan 28 - 5 - 2010
+
+	try {
+
+		bool c1 = fabs(x1 - x2) > 1.0e-9 ? true : false; // cannot have x1 == x2
+		bool c2 = tol > 1.0e-16 ? true : false;
+		bool c3 = mm < M ? true : false;
+
+		if (c1 && c2 && c3) {
+
+			int iter;
+
+			static const int ITMAX = 100;//Used in rtbis, rtflsp, rtsec, zriddr
+
+			double a = std::min(x1, x2), b = std::max(x1, x2), c = std::max(x1, x2), d, e, min1, min2;
+			double fc, p, q, r, s, tol1, xm;
+			double fa = eigeneqn_a(a, t, mm), fb = eigeneqn_a(b, t, mm);
+
+			if ((fa>0.0 && fb>0.0) || (fa<0.0 && fb<0.0)) {
+				std::cerr << "Root must be bracketed in zbrent\n";
+			}
+			fc = fb;
+			for (iter = 1; iter <= ITMAX; iter++) {
+				if ((fb>0.0 && fc>0.0) || (fb<0.0 && fc<0.0)) {
+					c = a;
+					fc = fa;
+					e = d = b - a;
+				}
+				if (fabs(fc)<fabs(fb)) {
+					a = b;
+					b = c;
+					c = a;
+					fa = fb;
+					fb = fc;
+					fc = fa;
+				}
+				tol1 = 2.0*EPS*fabs(b) + 0.5*tol;
+				xm = 0.5*(c - b);
+				if (fabs(xm) <= tol1 || fb == 0.0) return b;
+				/*if(fabs(xm)<=tol1 || fb==0.0){
+				std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
+				return b;
+				}*/
+				if (fabs(e) >= tol1 && fabs(fa)>fabs(fb)) {
+					s = fb / fa;
+					if (a == c) {
+						p = 2.0*xm*s;
+						q = 1.0 - s;
+					}
+					else {
+						q = fa / fc;
+						r = fb / fc;
+						p = s * (2.0*xm*q*(q - r) - (b - a)*(r - 1.0));
+						q = (q - 1.0)*(r - 1.0)*(s - 1.0);
+					}
+					if (p>0.0) q = -q;
+					p = fabs(p);
+					min1 = 3.0*xm*q - fabs(tol1*q);
+					min2 = fabs(e*q);
+					if (2.0*p<std::min(min1, min2)) {
+						e = d;
+						d = p / q;
+					}
+					else {
+						d = xm;
+						e = d;
+					}
+				}
+				else {
+					d = xm;
+					e = d;
+				}
+				a = b;
+				fa = fb;
+				if (fabs(d)>tol1) {
+					b += d;
+				}
+				else {
+					b += template_funcs::SIGN(tol1, xm);
+				}
+				fb = eigeneqn_a(b, t, mm);
+			}
+			std::cerr << "Maximum number of iterations exceeded in zbrent\n";
+			return 0.0;
+		}
+		else {
+			std::string reason = "Error: double slab_fl_neff_A::zbrent(double x1,double x2,double tol,bool t,int mm)\n";
+			if (!c1) reason += "Cannot have x1 = x2\nx1 = " + template_funcs::toString(x1) + ", x2 = " + template_funcs::toString(x1) + "\n";
+			if (!c2) reason += "Desired tolerance is less than smallest allowable EPS\n";
+			if (!c3) reason += "mm >= M\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_neff_A::neff_search(bool mode)
+{
+	// Compute the waveguide mode effective indices based on given polarisation and wg_type
+	
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+
+	try {
+		if (lower < upper) {
+		
+			int m;
+			double b;
+
+			std::vector<double> vec;
+
+			for (m = 0; m < M; m++) {
+				b = zbrent(lower, upper, EPS, mode, m);
+
+				if (b>lower && b<upper) {
+					vec.push_back(b);
+				}
+
+			}
+
+			if (mode) {
+				betaE = vec;
+			}
+			else {
+				betaH = vec;
+			}
+
+			vec.clear();
+
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_A::neff_search(bool mode, bool wg_type)\n";
+			reason += "Search range is not correctly defined\n";
+			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+			throw std::range_error(reason);
+		}	
+	}
+	catch (std::range_error &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+slab_fl_neff_B::slab_fl_neff_B()
+{
+	// Default Constructor
+}
+
+slab_fl_neff_B::slab_fl_neff_B(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib)
+{
+	// Constructor
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+
+	set_params(width, rib_width, lambda, ncore, nsub, nclad, nrib);
+}
+
+void slab_fl_neff_B::set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib)
+{
+	// set parameters for four layer slab
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+
+	try {
+		bool c1 = width > 0.0 ? true : false;
+		bool c1a = rib_width > 0.0 ? true : false;
+		bool c2 = lambda > 0.0 ? true : false;
+		bool c3 = nclad >= 1.0 ? true : false;
+		bool c4 = nsub >= 1.0 ? true : false;
+		bool c6 = nrib >= 1.0 ? true : false;
+		bool c5 = ncore > std::max(nsub, nclad) ? true : false;
+		bool c7 = ncore > std::max(nsub, nrib) ? true : false;
+
+		if (c1 && c1a && c2 && c3 && c4 && c5 && c6 && c7) {
+
+			d = width;
+
+			dr = rib_width;
+
+			l = lambda;
+
+			nc = ncore;
+			nc_sqr = template_funcs::DSQR(nc);
+
+			nr = nrib;
+			nr_sqr = template_funcs::DSQR(nr);
+
+			ns = std::max(nsub, nclad);
+			ns_sqr = template_funcs::DSQR(ns);
+
+			ncl = std::min(nsub, nclad);
+			ncl_sqr = template_funcs::DSQR(ncl);
+
+			nm = std::max(ns, nr);
+			nm_sqr = template_funcs::DSQR(nm);
+
+			k = Two_PI / l;
+			k_sqr = template_funcs::DSQR(k); // k_{0}^{2}
+
+			k_sqr_nc_sqr = k_sqr * nc_sqr; // k_{0}^{2} n_{c}^{2}
+			k_sqr_ns_sqr = k_sqr * ns_sqr; // k_{0}^{2} n_{s}^{2}
+			k_sqr_ncl_sqr = k_sqr * ncl_sqr; // k_{0}^{2} n_{cl}^{2}
+			k_sqr_nr_sqr = k_sqr * nr_sqr; // k_{0}^{2} n_{r}^{2}
+			k_sqr_nm_sqr = k_sqr * nm_sqr; // k_{0}^{2} n_{m}^{2}
+
+			etacs = nc_sqr / ns_sqr;
+			etacr = nc_sqr / nr_sqr;
+			etarcl = nr_sqr / ncl_sqr;
+
+			// Only difference between A, B cases is search space for neff and eigenequation
+			// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+			// Case B: lower = k nm, upper - k nc, NA^{2} = nc^{2} - nm^{2}
 
 			double x = nc_sqr - nm_sqr;
 			double y = ns_sqr - ncl_sqr;
@@ -1067,7 +1388,7 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 			V = (PI*d*na) / l; // V-parameter
 
 			// predicted number of modes
-			M = static_cast<int>( std::max( 1.0, ceil( (2.0*V / PI) ) ) );
+			M = static_cast<int>(std::max(1.0, ceil((2.0*V / PI))));
 
 			lower = k * nm; // lower bound of search space
 
@@ -1082,10 +1403,9 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 			// Empty the std::vector each time a new instance of the class is called
 			betaE.clear();
 			betaH.clear();
-
 		}
 		else {
-			std::string reason = "Error: void slab_fl_neff::set_params(double width,double lambda,double ncore,double nsub,double nclad)\n";
+			std::string reason = "Error: void slab_fl_neff_B::set_params(double width,double lambda,double ncore,double nsub,double nclad)\n";
 			if (!c1) reason += "WG width = " + template_funcs::toString(width, 3) + " is negative\n";
 			if (!c2) reason += "Wavelength = " + template_funcs::toString(lambda, 3) + " is negative\n";
 			if (!c3) reason += "Cladding Index = " + template_funcs::toString(nclad, 3) + " is less than one\n";
@@ -1096,7 +1416,6 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 
 			throw std::invalid_argument(reason);
 		}
-
 	}
 	catch (std::invalid_argument &e) {
 		useful_funcs::exit_failure_output(e.what());
@@ -1104,70 +1423,214 @@ void slab_fl_neff::set_params(double width, double lambda, double ncore, double 
 	}
 }
 
-//double slab_fl_neff::eigeneqn_a(double x, int mm, bool t)
-//{
-//	// Dispersion equation corresponding to case a from Adams
-//	
-//	// Case A => Field Oscillating in Core and Ridge
-//	// For there to be a solution one has to have ns <= ncl < nr < nc
-//
-//	double h, p, q, r, tmp;
-//
-//	double x_sqr = template_funcs::DSQR(x);
-//
-//	tmp = k_sqr_nc_sqr - x_sqr;
-//	h = (tmp > 0 ? sqrt(tmp) : 0.0);
-//
-//	tmp = k_sqr_nr_sqr - x_sqr;
-//	r = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	tmp = x_sqr - k_sqr_ns_sqr;
-//	p = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	tmp = x_sqr - k_sqr_ncl_sqr;
-//	q = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	if (t) {//TE modes
-//		return d * h - atan((p / h)) - atan((r / h)*tan(atan(q / r) - dr * r)) - mm * PI;
-//	}
-//	else {//TM modes
-//		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*tan(atan(etarcl*(q / r)) - dr * r)) - mm * PI;
-//	}
-//}
-//
-//double slab_fl_neff::eigeneqn_b(double x, int mm, bool t)
-//{
-//	//Dispersion equation corresponding to case b from Adams
-//	//This means that the field oscillates in the core only	
-//	//This is an alternative form that produces the correct solutions
-//
-//	double h, p, q, r, tmp;
-//
-//
-//	tmp = DSQR(k)*DSQR(nc) - x * x;
-//	h = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	tmp = x * x - DSQR(k)*DSQR(ns);
-//	p = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	tmp = x * x - DSQR(k)*DSQR(ncl);
-//	q = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	tmp = x * x - DSQR(k)*DSQR(nr);
-//	r = (tmp>0 ? sqrt(tmp) : 0.0);
-//
-//	double v = ((r - q) / (r + q));
-//	double v1 = exp(-2.0*r*dr);
-//	double v2den = (1 + v * v1);
-//	double v2 = (v2den>0.0 ? (1 - v * v1) / v2den : 10.0);
-//	double etacs = DSQR(nc / ns);
-//	double etacr = DSQR(nc / nr);
-//	double etarcl = DSQR(nr / ncl);
-//
-//	if (t) {//TE modes
-//		return d * h - atan((p / h)) - atan((r / h)*v2) - mm * PI;
-//	}
-//	else {//TM modes
-//		return d * h - atan(etacs*(p / h)) - atan(etacr*(r / h)*v2) - mm * PI;
-//	}
-//}
+double slab_fl_neff_B::eigeneqn_b(double x, int mm, bool t)
+{
+	//Dispersion equation corresponding to case b from Adams
+	//This means that the field oscillates in the core only	
+	//This is an alternative form that produces the correct solutions
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+
+	try {
+
+		if (k_sqr_nc_sqr > k_sqr_nm_sqr) {
+			double h, p, q, r, tmp, x_sqr, v, v1, v2den, v2;
+
+			x_sqr = template_funcs::DSQR(x);
+
+			tmp = k_sqr_nc_sqr - x_sqr;
+			h = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_ns_sqr;
+			p = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_ncl_sqr;
+			q = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_nr_sqr;
+			r = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			v = ((r - q) / (r + q));
+
+			v1 = exp(-2.0 * r *dr);
+
+			v2den = (1 + v * v1);
+
+			v2 = (v2den > 0.0 ? (1 - v * v1) / v2den : 10.0);
+
+			if (t) {//TE modes
+				return (d * h) - atan((p / h)) - atan((r / h)*v2) - mm * PI;
+			}
+			else {//TM modes
+				return (d * h) - atan(etacs*(p / h)) - atan(etacr * (r / h) * v2) - mm * PI;
+			}
+		}
+		else {
+			std::string reason = "Error: double slab_fl_neff_B::eigeneqn_b(double x, int mm, bool t)\n";
+			reason += "Input parameters not correctly defined\n";
+			reason += "k_{0}^{2} n_{c}^{2} = " + template_funcs::toString(k_sqr_nc_sqr) + ", k_{0}^{2} n_{m}^{2} = " + template_funcs::toString(k_sqr_nm_sqr) + "\n";
+			return 0;
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_neff_B::zbrent(double x1, double x2, double tol, bool t, int mm)
+{
+	//Find the root of the function between x1 and x2 using brent's method
+	//The root is refined to +/- tol
+	//Seemingly one of the best methods to use
+
+	//This will be used to compute the roots of eigeneq_b
+	//R. Sheehan 28 - 5 - 2010
+
+	try {
+
+		bool c1 = fabs(x1 - x2) > 1.0e-9 ? true : false; // cannot have x1 == x2
+		bool c2 = tol > 1.0e-16 ? true : false;
+		bool c3 = mm < M ? true : false;
+
+		if (c1 && c2 && c3) {
+
+			int iter;
+
+			static const int ITMAX = 100;//Used in rtbis, rtflsp, rtsec, zriddr
+
+			double a = std::min(x1, x2), b = std::max(x1, x2), c = std::max(x1, x2), d, e, min1, min2;
+			double fc, p, q, r, s, tol1, xm;
+			double fa = eigeneqn_b(a, t, mm), fb = eigeneqn_b(b, t, mm);
+
+			if ((fa>0.0 && fb>0.0) || (fa<0.0 && fb<0.0)) {
+				std::cerr << "Root must be bracketed in zbrent\n";
+			}
+			fc = fb;
+			for (iter = 1; iter <= ITMAX; iter++) {
+				if ((fb>0.0 && fc>0.0) || (fb<0.0 && fc<0.0)) {
+					c = a;
+					fc = fa;
+					e = d = b - a;
+				}
+				if (fabs(fc)<fabs(fb)) {
+					a = b;
+					b = c;
+					c = a;
+					fa = fb;
+					fb = fc;
+					fc = fa;
+				}
+				tol1 = 2.0*EPS*fabs(b) + 0.5*tol;
+				xm = 0.5*(c - b);
+				if (fabs(xm) <= tol1 || fb == 0.0) return b;
+				/*if(fabs(xm)<=tol1 || fb==0.0){
+				std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
+				return b;
+				}*/
+				if (fabs(e) >= tol1 && fabs(fa)>fabs(fb)) {
+					s = fb / fa;
+					if (a == c) {
+						p = 2.0*xm*s;
+						q = 1.0 - s;
+					}
+					else {
+						q = fa / fc;
+						r = fb / fc;
+						p = s * (2.0*xm*q*(q - r) - (b - a)*(r - 1.0));
+						q = (q - 1.0)*(r - 1.0)*(s - 1.0);
+					}
+					if (p>0.0) q = -q;
+					p = fabs(p);
+					min1 = 3.0*xm*q - fabs(tol1*q);
+					min2 = fabs(e*q);
+					if (2.0*p<std::min(min1, min2)) {
+						e = d;
+						d = p / q;
+					}
+					else {
+						d = xm;
+						e = d;
+					}
+				}
+				else {
+					d = xm;
+					e = d;
+				}
+				a = b;
+				fa = fb;
+				if (fabs(d)>tol1) {
+					b += d;
+				}
+				else {
+					b += template_funcs::SIGN(tol1, xm);
+				}
+				fb = eigeneqn_b(b, t, mm);
+			}
+			std::cerr << "Maximum number of iterations exceeded in zbrent\n";
+			return 0.0;
+		}
+		else {
+			std::string reason = "Error: double slab_fl_neff_B::zbrent(double x1,double x2,double tol,bool t,int mm)\n";
+			if (!c1) reason += "Cannot have x1 = x2\nx1 = " + template_funcs::toString(x1) + ", x2 = " + template_funcs::toString(x1) + "\n";
+			if (!c2) reason += "Desired tolerance is less than smallest allowable EPS\n";
+			if (!c3) reason += "mm >= M\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_neff_B::neff_search(bool mode)
+{
+	// Compute the waveguide mode effective indices based on given polarisation and wg_type
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+
+	// Case B: lower = k nm, upper - k nc, NA^{2} = nc^{2} - nm^{2}
+
+	try {
+
+		if (lower < upper) {
+
+			int m;
+			double b;
+
+			std::vector<double> vec;
+
+			for (m = 0; m < M; m++) {
+				b = zbrent(lower, upper, EPS, mode, m);
+
+				if (b>lower && b<upper) {
+					vec.push_back(b);
+				}
+
+			}
+
+			if (mode) {
+				betaE = vec;
+			}
+			else {
+				betaH = vec;
+			}
+
+			vec.clear();
+
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_B::neff_search(bool mode, bool wg_type)\n";
+			reason += "Search range is not correctly defined\n";
+			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+			throw std::range_error(reason);
+		}
+	}
+	catch (std::range_error &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}

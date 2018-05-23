@@ -67,6 +67,7 @@ protected:
 	double k_sqr_ns_sqr; // k_{0}^{2} n_{s}^{2}
 	double k_sqr_ncl_sqr; // k_{0}^{2} n_{cl}^{2}
 	double k_sqr_nr_sqr; // k_{0}^{2} n_{r}^{2}
+	double k_sqr_nm_sqr; // k_{0}^{2} n_{m}^{2}
 
 	std::vector<double> betaE; // TE propagation constants
 	std::vector<double> betaH; // TM propagation constants
@@ -85,8 +86,6 @@ public:
 	void set_params(double width, double lambda, double ncore, double nsub, double nclad); // assign the parameters needed to perform the neff_search calculation
 
 	void neff_search(bool mode); // compute the effective indices for a waveguide
-
-	void test_call(bool mode); // test to see if I can pass a member function to a function in a base class
 
 private:
 	// methods that the user does not need access to
@@ -135,22 +134,54 @@ private:
 
 // Four Layer Slab
 
-class slab_fl_neff : protected slab {
+class slab_fl_neff_A : protected slab {
 	// class which is used to compute the effective indices in a Case A four layer slab
+
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
+	
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
 public:
 	// Constructors
-	slab_fl_neff(void); 
+	slab_fl_neff_A(void); 
 
-	slab_fl_neff(double width, double lambda, double ncore, double nsub, double nclad, double nrib);
+	slab_fl_neff_A(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
 
 	// Methods
-	void set_params(double width, double lambda, double ncore, double nsub, double nclad, double nrib);
+	void set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
+
+	void neff_search(bool mode); 
 
 private:
-	double eigeneqn_a(double x, int mm, bool t); 
+	double eigeneqn_a(double x, int mm, bool t);
+
+	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_a
+};
+
+class slab_fl_neff_B : protected slab {
+	// class which is used to compute the effective indices in a Case B four layer slab
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+	
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+public:
+	// Constructors
+	slab_fl_neff_B(void);
+
+	slab_fl_neff_B(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
+
+	// Methods
+	void set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
+
+	void neff_search(bool mode);
+
+private:
 	double eigeneqn_b(double x, int mm, bool t);
+
+	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_b
 };
 
 #endif
