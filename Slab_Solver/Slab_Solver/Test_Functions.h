@@ -10,6 +10,8 @@ namespace testing {
 
 	void slab_wg_mode_calc(); 
 
+	void coupled_slab_wg_calc(); 
+
 }
 
 #endif

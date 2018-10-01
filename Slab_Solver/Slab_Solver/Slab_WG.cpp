@@ -1894,7 +1894,7 @@ void coupled_slab_tl_neff::set_params(double separation, double width, double la
 	// Assign values to the parameters for the coupled slab structure
 
 	try {	
-		if (separation > width) {
+		if (separation > 0.0) {
 			slab_tl_neff::set_params(width, lambda, ncore, nsub, nsub);
 
 			slab_sep = separation;
