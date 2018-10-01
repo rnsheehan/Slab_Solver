@@ -229,4 +229,23 @@ private:
 	//void output_stats(bool mode, std::ofstream &file_obj); // write computed mode statistics to a file
 };
 
+// class for computing the coupling coefficient of the coupled slab waveguide
+
+class coupled_slab_tl_neff : public slab_tl_neff {
+
+public:
+	coupled_slab_tl_neff();
+
+	coupled_slab_tl_neff(double separation, double width, double lambda, double ncore, double nsub);
+
+	void set_params(double separation, double width, double lambda, double ncore, double nsub);
+
+	double compute_coupling_coeff(bool mode); 
+
+private:
+	double slab_sep; 
+	double coupling_coeff; 
+	double L_coupling; 
+};
+
 #endif

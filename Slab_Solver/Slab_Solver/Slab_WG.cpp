@@ -1873,3 +1873,74 @@ double slab_fl_mode_B::TE_TM(double x, int i, bool mode)
 		exit(EXIT_FAILURE);
 	}
 }
+
+// definitions for the coupled slab waveguide class
+
+coupled_slab_tl_neff::coupled_slab_tl_neff()
+{
+	// Default
+	slab_sep = coupling_coeff = L_coupling = 0.0; 
+}
+
+coupled_slab_tl_neff::coupled_slab_tl_neff(double separation, double width, double lambda, double ncore, double nsub)
+{
+	// Assign value to the slab parameters
+
+	set_params(separation, width, lambda, ncore, nsub); 
+}
+
+void coupled_slab_tl_neff::set_params(double separation, double width, double lambda, double ncore, double nsub)
+{
+	// Assign values to the parameters for the coupled slab structure
+
+	try {	
+		if (separation > width) {
+			slab_tl_neff::set_params(width, lambda, ncore, nsub, nsub);
+
+			slab_sep = separation;
+		}
+		else {
+			throw std::invalid_argument("Error: coupled_slab_tl_neff::set_params(double separation, double width, double lambda, double ncore, double nsub)\nSeparation < 2 Width\n");
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	} 
+}
+
+double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
+{
+	// Compute the coupling coefficient for the coupled waveguides
+
+	try {
+		neff_search(mode);
+
+		if (nbeta(mode) > 0) {
+
+			double tt = d / 2; 
+			double hh = h(0, mode); 
+			double pp = p(0, mode);
+			double vs = template_funcs::DSQR(tt * k * na);
+			double num = template_funcs::DSQR(tt * hh * pp); 
+			double denom = _beta(0, mode)*(1.0 + tt * pp)*vs;
+			double arg = -1.0 * pp * (slab_sep - d); 
+			
+			if (denom > 0) {
+				return ( (num / denom)* exp(arg) );
+			}
+			else {
+				throw std::runtime_error("Error: double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)\nDivision by zero occurred\n");
+				return 0.0; 
+			}
+		}
+		else {
+			throw std::runtime_error("Error: double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)\nNo modes computed for this waveguide\n"); 
+			return 0;
+		}
+	}
+	catch (std::runtime_error &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
