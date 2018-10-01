@@ -1923,7 +1923,7 @@ double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 			double pp = p(0, mode);
 			double vs = template_funcs::DSQR(tt * k * na);
 			double num = template_funcs::DSQR(tt * hh * pp); 
-			double denom = _beta(0, mode)*(1.0 + tt * pp)*vs;
+			double denom = _beta(0, mode)*(1.0 + ( tt * pp ) )*vs;
 			double arg = -1.0 * pp * (slab_sep - d); 
 			
 			if (denom > 0) {
