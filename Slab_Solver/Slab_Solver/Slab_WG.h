@@ -160,9 +160,25 @@ private:
 };
 
 class slab_fl_mode_A : public slab_fl_neff_A {
+	// Class for computing the effective indices and mode profiles in type A four layer slab
 public: 
 	slab_fl_mode_A(void); 
+	slab_fl_mode_A(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
 
+	void compute_neff(bool mode);
+
+	//void output_all_stats(std::string &storage_directory);
+
+	//void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
+
+private:
+	double phase(int i, bool t); // phase of waveguide mode
+
+	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
+
+	//double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
+
+	//void output_stats(bool mode, std::ofstream &file_obj); // write computed mode statistics to a file
 };
 
 class slab_fl_neff_B : protected slab {
@@ -191,9 +207,26 @@ private:
 };
 
 class slab_fl_mode_B : public slab_fl_neff_B {
+	// Class for computing the effective indices and mode profiles in type B four layer slab
 public:
 	slab_fl_mode_B(void);
 
+	slab_fl_mode_B(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
+
+	void compute_neff(bool mode); 
+
+	//void output_all_stats(std::string &storage_directory);
+
+	//void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
+
+private:
+	double phase(int i, bool t); // phase of waveguide mode
+
+	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
+
+	//double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
+
+	//void output_stats(bool mode, std::ofstream &file_obj); // write computed mode statistics to a file
 };
 
 #endif

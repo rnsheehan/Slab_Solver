@@ -746,7 +746,6 @@ double slab_tl_mode::phase(int i, bool t)
 	// Phase of mode in slab waveguide
 
 	try {
-
 		if (nbeta(t) > 0) {
 			if (i<0 || i > nbeta(t)) {
 				throw std::range_error("Error: double slab_tl_neff::phase(int i, bool t)\n Attempting to access arrays out of range\n");
@@ -1305,10 +1304,126 @@ void slab_fl_neff_A::neff_search(bool mode)
 	}
 }
 
+// slab_fl_mode_A is used to compute the mode profile in the four layer slab case A
+
 slab_fl_mode_A::slab_fl_mode_A()
 {
 	// Default
 }
+
+slab_fl_mode_A::slab_fl_mode_A(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib)
+{
+	// Assign value to all the parameters
+	set_params(width, rib_width, lambda, ncore, nsub, nclad, nrib);
+}
+
+void slab_fl_mode_A::compute_neff(bool mode)
+{
+	// Compute the effective indices of the slab waveguide
+	neff_search(mode);
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
+	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
+		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << "\n";
+	}
+	std::cout << "\n";
+}
+
+double slab_fl_mode_A::phase(int i, bool t)
+{
+	// Phase of mode in type B four layer slab waveguide
+
+	try {
+		if (nbeta(t) > 0) {
+			if (i<0 || i > nbeta(t)) {
+				throw std::range_error("Error: double slab_fl_mode_B::phase(int i, bool t)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				if (t) {
+					double qq = q(i, t);
+					double rr = r(i, t);
+					return -1.0*((dr * rr) + atanh(qq / rr));
+				}
+				else {
+					double qq = q(i, t);
+					double rr = r(i, t);
+					return -1.0*((dr * rr) + atanh((etarcl * qq) / rr));
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument("Error: double slab_fl_mode_B::phase(int i, bool t)s\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error &e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_mode_A::TE_TM(double x, int i, bool mode)
+{
+	// shape of waveguide mode
+	// Function which defines the shape of the modes for Type A four layer slab
+	// This method uses the stored computed propagation constants
+	// Assumes that the slab wg has core region defined on -W < x < 0 and 0 < x < D, 
+
+	try {
+		if (nbeta(mode) > 0) {
+			if (i<0 || i > nbeta(mode)) {
+				throw std::range_error("Error: double slab_fl_mode_A::TE_TM(double x,int i,bool mode)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				double hh = h(i, mode);
+				double rr = r(i, mode);
+				double wh = d * hh;
+				double qq = q(i, mode);
+				double pp = p(i, mode);
+				double ph = phase(i, mode);
+				double rrhh = mode ? (rr / hh) * tan(ph) : (rr / hh) * tan(ph) * etacr;
+				if (x < -d) {
+					// x < -W
+					return ((cos(wh) + (rrhh * sin(wh)))*exp(pp * (x + d)));
+				}
+				else if (x >= -d && x <= 0) {
+					// -W < x < 0
+					return (cos(hh * x) - rrhh * sin(hh * x));
+				}
+				else if (x > 0 && x <= dr) {
+					// 0 < x < D
+					return (cos((rr * x) + ph) / cos(ph));
+				}
+				else {
+					// x > D
+					return ((cos((rr * dr) + ph) / cos(ph))*exp(qq * (dr - x)));
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument("Error: double slab_fl_mode_A::TE_TM(int i, bool t)\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error &e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+// slab_fl_mode_B is used to compute the effective indices in the four layer slab case B
 
 slab_fl_neff_B::slab_fl_neff_B()
 {
@@ -1452,11 +1567,12 @@ double slab_fl_neff_B::eigeneqn_b(double x, int mm, bool t)
 
 			tmp = x_sqr - k_sqr_ncl_sqr;
 			q = (tmp > 0 ? sqrt(tmp) : 0.0);
+			if (!t) q *= etarcl; // multiply q by etarcl in the case of TM polarisation
 
 			tmp = x_sqr - k_sqr_nr_sqr;
 			r = (tmp > 0 ? sqrt(tmp) : 0.0);
 
-			v = ((r - q) / (r + q));
+			v = ((r - q) / (r + q)); // this includes the change to q depending on polarisation
 
 			v1 = exp(-2.0 * r *dr);
 
@@ -1640,7 +1756,120 @@ void slab_fl_neff_B::neff_search(bool mode)
 	}
 }
 
+// slab_fl_mode_B is used to compute the mode profile in the four layer slab case B
+
 slab_fl_mode_B::slab_fl_mode_B()
 {
 	// Default
+}
+
+slab_fl_mode_B::slab_fl_mode_B(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib)
+{
+	set_params(width, rib_width, lambda, ncore, nsub, nclad, nrib);
+}
+
+void slab_fl_mode_B::compute_neff(bool mode)
+{
+	// Compute the effective indices of the slab waveguide
+	neff_search(mode);
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
+	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
+		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << "\n";
+	}
+	std::cout << "\n";
+}
+
+double slab_fl_mode_B::phase(int i, bool t)
+{
+	// Phase of mode in type B four layer slab waveguide
+
+	try {
+		if (nbeta(t) > 0) {
+			if (i<0 || i > nbeta(t)) {
+				throw std::range_error("Error: double slab_fl_mode_B::phase(int i, bool t)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				if (t) {
+					double qq = q(i, t);
+					double rr = r(i, t); 
+					return -1.0*( ( dr * rr ) + atanh(qq/rr) );
+				}
+				else {
+					double qq = q(i, t);
+					double rr = r(i, t);
+					return -1.0*( ( dr * rr ) + atanh( (etarcl * qq) / rr) );
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument("Error: double slab_fl_mode_B::phase(int i, bool t)s\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error &e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_mode_B::TE_TM(double x, int i, bool mode) 
+{
+	// shape of waveguide mode
+	// Function which defines the shape of the modes for Type B four layer slab
+	// This method uses the stored computed propagation constants
+	// Assumes that the slab wg has core region defined on -W < x < 0 and 0 < x < D, 
+
+	try {		
+		if (nbeta(mode) > 0) {
+			if (i<0 || i > nbeta(mode)) {
+				throw std::range_error("Error: double slab_fl_mode_B::TE_TM(double x,int i,bool mode)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				double hh = h(i, mode); 
+				double rr = r(i, mode); 
+				double wh = d * hh;
+				double qq = q(i, mode);
+				double pp = p(i, mode); 
+				double ph = phase(i, mode); 
+				double rrhh = mode ? (rr / hh) * tan(ph) : (rr / hh) * tan(ph) * etacr;
+				if (x < -d) {
+					// x < -W
+					return ( ( cos(wh) + ( rrhh * sin(wh) ) )*exp( pp * ( x + d ) ) );
+				}
+				else if (x >= -d && x <= 0) {
+					// -W < x < 0
+					return ( cos( hh * x ) - rrhh * sin( hh * x ) ); 
+				}
+				else if (x > 0 && x <= dr) {
+					// 0 < x < D
+					return ( cosh( (rr * x) + ph) / cosh(ph) ); 
+				}
+				else {
+					// x > D
+					return ( ( cosh( (rr * dr) + ph) / cosh(ph) )*exp( qq * ( dr - x ) ) ); 
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument("Error: double slab_fl_mode_B::TE_TM(int i, bool t)\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error &e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
 }
