@@ -519,7 +519,7 @@ void slab_tl_mode::compute_neff(bool mode)
 
 	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
 	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
-		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << "\n";
+		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << " , n_{eff} = " << _beta(i, mode) / k << "\n";
 	}
 	std::cout << "\n";
 }
@@ -1912,6 +1912,7 @@ void coupled_slab_tl_neff::set_params(double separation, double width, double la
 double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 {
 	// Compute the coupling coefficient for the coupled waveguides
+	// returned value is in units of um^{-1}
 
 	try {
 		neff_search(mode);
@@ -1921,8 +1922,8 @@ double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 			double tt = d / 2; 
 			double hh = h(0, mode); 
 			double pp = p(0, mode);
-			double vs = template_funcs::DSQR(tt * k * na);
-			double num = template_funcs::DSQR(tt * hh * pp); 
+			double vs = template_funcs::DSQR(k * na);
+			double num = template_funcs::DSQR(hh * pp); 
 			double denom = _beta(0, mode)*(1.0 + ( tt * pp ) )*vs;
 			double arg = -1.0 * pp * (slab_sep - d); 
 			

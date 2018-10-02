@@ -9,7 +9,7 @@
 int main()
 {
 
-	//testing::slab_wg_mode_calc(); 
+	testing::slab_wg_mode_calc(); 
 
 	testing::coupled_slab_wg_calc(); 
 
