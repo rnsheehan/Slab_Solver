@@ -1110,6 +1110,8 @@ double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
 
+	// https://xkcd.com/2034/
+
 	try{
 		if (k_sqr_nr_sqr > k_sqr_ncl_sqr) {
 
@@ -1786,6 +1788,8 @@ double slab_fl_mode_B::phase(int i, bool t)
 {
 	// Phase of mode in type B four layer slab waveguide
 
+	// phase term may not be valid for this case
+
 	try {
 		if (nbeta(t) > 0) {
 			if (i<0 || i > nbeta(t)) {
@@ -1825,7 +1829,9 @@ double slab_fl_mode_B::TE_TM(double x, int i, bool mode)
 	// shape of waveguide mode
 	// Function which defines the shape of the modes for Type B four layer slab
 	// This method uses the stored computed propagation constants
-	// Assumes that the slab wg has core region defined on -W < x < 0 and 0 < x < D, 
+	// Assumes that the slab wg has core region defined on -W < x < 0 and 0 < x < D
+
+	// https://www.smbc-comics.com/comic/cure
 
 	try {		
 		if (nbeta(mode) > 0) {
