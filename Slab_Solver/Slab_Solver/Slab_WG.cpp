@@ -1779,7 +1779,7 @@ void slab_fl_mode_B::compute_neff(bool mode)
 
 	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
 	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
-		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << "\n";
+		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(9) << _beta(i, mode) << ", "<< _beta(i, mode) / k << "\n";
 	}
 	std::cout << "\n";
 }

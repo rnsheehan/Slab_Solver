@@ -50,6 +50,30 @@ void testing::slab_wg_mode_calc()
 	std::cout << "Complete\n";
 }
 
+void testing::fl_slab_wg_neff_calc()
+{
+	// Compute the effective index in a four layer slab waveguide
+	// R. Sheehan 5 - 10 - 2018
+
+	double W, Wr, WL, Nc, Ns, Nr, Ncl; 
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+	/*W = 1.5; Wr = 1.0; WL = 1.55;
+	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;*/
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+	W = 1.5; Wr = 1.0; WL = 1.55;
+	Nc = 3.38; Ns = 3.0; Nr = 3.17; Ncl = 1.0;	
+
+	slab_fl_mode_B fl_obj;
+
+	fl_obj.set_params(W, Wr, WL, Nc, Ns, Ncl, Nr); 
+
+	fl_obj.compute_neff(TE); 
+}
+
 void testing::coupled_slab_wg_calc()
 {
 	// Compute the coupling coefficient for a pair of identical slab waveguides
