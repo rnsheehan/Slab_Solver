@@ -27,11 +27,11 @@ void testing::slab_wg_mode_calc()
 	// Run a three layer slab waveguide mode calculation and check the results
 	// R. Sheehan 2 - 5 - 2018
 
-	double W = 0.22;
+	double W = 1.0;
 	double WL = 1.55;
-	double Nc = 3.45;
-	double Ns = 1.45;
-	double Ncl = 1.0;
+	double Nc = 3.38;
+	double Ns = 3.17;
+	double Ncl = 3.17;
 
 	slab_tl_mode sl_obj;
 
@@ -59,13 +59,13 @@ void testing::fl_slab_wg_neff_calc()
 
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
-	/*W = 1.5; Wr = 1.0; WL = 1.55;
-	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;*/
+	W = 1.5; Wr = 1.0; WL = 1.55;
+	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
 
 	// Case B: Field Oscillating in Core Only
 	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
-	W = 1.5; Wr = 1.0; WL = 1.55;
-	Nc = 3.38; Ns = 3.0; Nr = 3.17; Ncl = 1.0;	
+	//W = 1.0; Wr = 0.5; WL = 1.55;
+	//Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
 
 	slab_fl_mode_B fl_obj;
 
