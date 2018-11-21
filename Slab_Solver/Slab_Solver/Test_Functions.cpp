@@ -27,19 +27,23 @@ void testing::slab_wg_mode_calc()
 	// Run a three layer slab waveguide mode calculation and check the results
 	// R. Sheehan 2 - 5 - 2018
 
-	double W = 1.0;
-	double WL = 1.55;
-	double Nc = 3.38;
-	double Ns = 3.17;
-	double Ncl = 3.17;
+	double W, WL, Nc, Ns, Ncl; 
+
+	//W = 1.0;  WL = 1.55; 
+	//Nc = 3.38; Ns = 3.17; Ncl = 3.17;
+
+	W = 1.7;  WL = 6.158;
+	Nc = 3.54102488; Ns = 1.75275048;
 
 	slab_tl_mode sl_obj;
 
-	sl_obj.set_params(W, WL, Nc, Ns, Ncl);
+	sl_obj.set_params(W, WL, Nc, Ns, Ns);
 
 	sl_obj.compute_neff(TE); 
 
-	int N = 501; 
+	sl_obj.compute_neff(TM);
+
+	/*int N = 501; 
 	double Lz = 3.0; 
 	std::string stor = ""; 
 
@@ -47,7 +51,7 @@ void testing::slab_wg_mode_calc()
 
 	sl_obj.output_modes(TE, N, Lz, stor); 
 
-	std::cout << "Complete\n";
+	std::cout << "Complete\n";*/
 }
 
 void testing::fl_slab_wg_neff_calc()
@@ -79,7 +83,7 @@ void testing::coupled_slab_wg_calc()
 	// Compute the coupling coefficient for a pair of identical slab waveguides
 	// R. Sheehan 1 - 10 - 2018
 
-	double W, D, WL, Nc, Ns; 
+	double W, D, WL, Nc, Ns;
 
 	// Code produces answer that matches with Okamoto example values
 	// see Okamoto page 178, kappa = 0.39 mm^{-1}, L_{c} = 4 mm
@@ -89,19 +93,31 @@ void testing::coupled_slab_wg_calc()
 
 	// Si wire of height H = 0.22 um has neff^{TE} = 2.81 along vertical for nc = 3.45, ns = 1.45 and ncl = 1.0 at l = 1.55
 	// Coupling coefficient between two Si wires of width W = 450 nm, D = 300 nm is kappa = 2.4 um^{-1}, L_{c} = 653 nm
-	W = 0.45; D = 0.3; WL = 1.55; Nc = 2.81; Ns = 1.0;
+	//W = 0.45; D = 0.3; WL = 1.55; Nc = 2.81; Ns = 1.0;
+
+	double kappa;
+
+	W = 4.0; WL = 6.09996577; Nc = 3.377661931; Ns = 3.148794556;
 
 	coupled_slab_tl_neff sl_obj;
 
-	sl_obj.set_params(D, W, WL, Nc, Ns);
+	D = 0.5; 
 
-	double kappa; 
-	
-	kappa = sl_obj.compute_coupling_coeff(TE);
+	for (int i = 0; i < 6; i++) {
 
-	std::cout << "Coupling coefficient = " << kappa << " um^{-1}\n"; 
+		sl_obj.set_params(D, W, WL, Nc, Ns);
 
-	std::cout << "Coupling length = " << (PI / (2.0*kappa)) << " um\n"; 
+		kappa = sl_obj.compute_coupling_coeff(TM);
 
-	std::cout << "Complete\n";
+		std::cout << "Separation = " << D << " um\n";
+
+		std::cout << "Coupling coefficient = " << kappa << " um^{-1}\n";
+
+		std::cout << "Coupling length = " << (PI / (2.0*kappa)) << " um\n";
+
+		std::cout << "\n\n";
+
+		D += 1.0; 
+
+	}
 }
