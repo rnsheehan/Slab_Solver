@@ -12,6 +12,8 @@ namespace testing {
 
 	void fl_slab_wg_neff_calc(); 
 
+	void fl_slab_wg_mode_calc(); 
+
 	void coupled_slab_wg_calc(); 
 
 }

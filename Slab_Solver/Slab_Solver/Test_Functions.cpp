@@ -32,8 +32,14 @@ void testing::slab_wg_mode_calc()
 	//W = 1.0;  WL = 1.55; 
 	//Nc = 3.38; Ns = 3.17; Ncl = 3.17;
 
-	W = 1.7;  WL = 6.158;
-	Nc = 3.54102488; Ns = 1.75275048;
+	//W = 1.7;  WL = 6.158;
+	//Nc = 3.54102488; Ns = 1.75275048;
+
+	/*W = 2.0; WL = 1.55; 
+	Nc = 3.27562; Ns = 3.27446;*/
+
+	W = 2.5; WL = 1.55; 
+	Nc = 3.293; Ns = 3.29152; 
 
 	slab_tl_mode sl_obj;
 
@@ -63,19 +69,49 @@ void testing::fl_slab_wg_neff_calc()
 
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
-	W = 1.5; Wr = 1.0; WL = 1.55;
+	W = 1.0; Wr = 1.0; WL = 1.55; 
+	//W = 0.5; Wr = 0.5; WL = 1.55;
+	//W = 1.0; Wr = 0.5; WL = 1.55;
 	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
 
 	// Case B: Field Oscillating in Core Only
 	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
-	//W = 1.0; Wr = 0.5; WL = 1.55;
+	//W = 0.5; Wr = 0.5; WL = 1.55; // n_{TM} = 3.274464
+	//W = 0.5; Wr = 1.0; WL = 1.55; // n_{TM} = 3.27562
+	//W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
+	//W = 0.6; Wr = 0.9; WL = 1.55; // n_{TM} = 3.293
 	//Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
 
-	slab_fl_mode_B fl_obj;
+	slab_fl_mode_A fl_obj;
+
+	//slab_fl_mode_B fl_obj;
 
 	fl_obj.set_params(W, Wr, WL, Nc, Ns, Ncl, Nr); 
 
 	fl_obj.compute_neff(TE); 
+}
+
+void testing::fl_slab_wg_mode_calc()
+{
+	// Compute the mode profile in a four layer slab waveguide
+	// R. Sheehan 20 - 2 - 2019
+
+	double W, Wr, WL, Nc, Ns, Nr, Ncl;
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+	//W = 0.5; Wr = 1.0; WL = 1.55; // n_{TM} = 3.21803
+	//W = 0.5; Wr = 0.5; WL = 1.55; // n_{TM} = 3.21245
+	//W = 1.0; Wr = 0.5; WL = 1.55; // n_{TM} = 3.327
+	//Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+	W = 0.5; Wr = 0.5; WL = 1.55; // n_{TM} = 3.274464
+	//W = 0.5; Wr = 1.0; WL = 1.55; // n_{TM} = 3.27562
+	//W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
+	//W = 0.6; Wr = 0.9; WL = 1.55; // n_{TM} = 3.293
+	Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
 }
 
 void testing::coupled_slab_wg_calc()

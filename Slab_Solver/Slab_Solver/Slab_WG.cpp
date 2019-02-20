@@ -1035,13 +1035,13 @@ void slab_fl_neff_A::set_params(double width, double rib_width, double lambda, d
 			nr = nrib;
 			nr_sqr = template_funcs::DSQR(nr);
 
-			ns = std::max(nsub, nclad);
+			ns = nsub;
 			ns_sqr = template_funcs::DSQR(ns);
 
-			ncl = std::min(nsub, nclad);
+			ncl = nclad;
 			ncl_sqr = template_funcs::DSQR(ncl);
 
-			nm = std::max(ns, nr);
+			nm = std::min(ns, ncl);
 			nm_sqr = template_funcs::DSQR(nm);
 			
 			k = Two_PI / l;
@@ -1058,20 +1058,23 @@ void slab_fl_neff_A::set_params(double width, double rib_width, double lambda, d
 			etarcl = nr_sqr / ncl_sqr;
 
 			// Only difference between A, B cases is search space for neff and eigenequation
-			// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+			// Case A: lower = k ncl, upper = k nc, NA^{2} = nr^{2} - ncl^{2}
 			// Case B: lower = k nm, upper - k nc, NA^{2} = nc^{2} - nm^{2}
 
-			double x = nr_sqr - ncl_sqr;
+			double x = nr_sqr - nm_sqr;
+			//double x = nc_sqr - nm_sqr;
 
 			na = sqrt(x); // numerical aperture
 
+			//V = (PI*(d+dr)*na) / l; // V-parameter
 			V = (PI*d*na) / l; // V-parameter
 
 			// predicted number of modes
 			M = static_cast<int>( std::max( 1.0, ceil( (2.0*V / PI) ) ) );
 
-			lower = k * ncl; // lower bound of search space
+			lower = k * nm; // lower bound of search space
 
+			//upper = k * nc; // upper bound of search space
 			upper = k * nr; // upper bound of search space
 
 			w = k * SPEED_OF_LIGHT;
@@ -1113,7 +1116,8 @@ double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)
 	// https://xkcd.com/2034/
 
 	try{
-		if (k_sqr_nr_sqr > k_sqr_ncl_sqr) {
+		//if (k_sqr_nc_sqr > k_sqr_nm_sqr) {
+		if (k_sqr_nr_sqr > k_sqr_nm_sqr) {
 
 			double h, p, q, r, tmp;
 
@@ -1264,7 +1268,7 @@ void slab_fl_neff_A::neff_search(bool mode)
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
 
-	// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+	// Case A: lower = k ncl, upper = k nc, NA^{2} = nr^{2} - ncl^{2}
 
 	try {
 		if (lower < upper) {
@@ -1569,14 +1573,14 @@ double slab_fl_neff_B::eigeneqn_b(double x, int mm, bool t)
 
 			tmp = x_sqr - k_sqr_ncl_sqr;
 			q = (tmp > 0 ? sqrt(tmp) : 0.0);
-			if (!t) q *= etarcl; // multiply q by etarcl in the case of TM polarisation
+			//if (!t) q *= etarcl; // multiply q by etarcl in the case of TM polarisation
 
 			tmp = x_sqr - k_sqr_nr_sqr;
 			r = (tmp > 0 ? sqrt(tmp) : 0.0);
 
 			v = ((r - q) / (r + q)); // this includes the change to q depending on polarisation
 
-			v1 = exp(-2.0 * r *dr);
+			v1 = exp(-2.0 * r *dr); // In the limit of large dr v1 -> 0 and v2 -> 1 => Case B FLS -> TLS
 
 			v2den = (1 + v * v1);
 
