@@ -69,18 +69,18 @@ void testing::fl_slab_wg_neff_calc()
 
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
-	W = 1.0; Wr = 1.0; WL = 1.55; 
+	//W = 1.0; Wr = 1.0; WL = 1.55; 
 	//W = 0.5; Wr = 0.5; WL = 1.55;
 	//W = 1.0; Wr = 0.5; WL = 1.55;
-	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
+	//Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
 
 	// Case B: Field Oscillating in Core Only
 	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
 	//W = 0.5; Wr = 0.5; WL = 1.55; // n_{TM} = 3.274464
 	//W = 0.5; Wr = 1.0; WL = 1.55; // n_{TM} = 3.27562
-	//W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
+	W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
 	//W = 0.6; Wr = 0.9; WL = 1.55; // n_{TM} = 3.293
-	//Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
+	Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
 
 	slab_fl_mode_A fl_obj;
 
