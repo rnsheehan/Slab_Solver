@@ -38,8 +38,14 @@ void testing::slab_wg_mode_calc()
 	/*W = 2.0; WL = 1.55; 
 	Nc = 3.27562; Ns = 3.27446;*/
 
-	W = 2.5; WL = 1.55; 
-	Nc = 3.293; Ns = 3.29152; 
+	//W = 2.5; WL = 1.55; 
+	//Nc = 3.293; Ns = 3.29152;
+
+	/*W = 0.3; WL = 1.535; 
+	Nc = 2.00704; Ns = 1.44446; Ncl = 1.0;*/ 
+
+	W = 0.3; WL = 1.55;
+	Nc = 2.00704; Ns = 1.44428; Ncl = 1.0;
 
 	slab_tl_mode sl_obj;
 
@@ -133,9 +139,16 @@ void testing::coupled_slab_wg_calc()
 
 	double kappa;
 
-	W = 4.0; WL = 6.09996577; Nc = 3.377661931; Ns = 3.148794556;
+	//W = 4.0; WL = 6.09996577; Nc = 3.377661931; Ns = 3.148794556;
+
+	W = 2; WL = 1.535; Nc = 1.63701; Ns = 1;
+	//W = 1.0; WL = 1.535; Nc = 1.475254387; Ns = 1;
 
 	coupled_slab_tl_neff sl_obj;
+
+	std::string filename = "Coupling_Coeff_W_" + template_funcs::toString(W, 2) + ".txt"; 
+
+	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
 
 	D = 0.5; 
 
@@ -153,7 +166,11 @@ void testing::coupled_slab_wg_calc()
 
 		std::cout << "\n\n";
 
+		write << std::setprecision(10) << D << " , " << kappa << "\n"; 
+
 		D += 1.0; 
 
 	}
+
+	write.close(); 
 }

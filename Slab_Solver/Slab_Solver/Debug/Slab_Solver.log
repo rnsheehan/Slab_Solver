@@ -1,7 +1,2 @@
-﻿  Main.cpp
-  Slab_WG.cpp
-  Test_Functions.cpp
-c:\users\robert\programming\c++\slab_solver\slab_solver\slab_solver\test_functions.cpp(30): warning C4101: 'Ncl': unreferenced local variable
-  Useful.cpp
-  Generating Code...
+﻿  Test_Functions.cpp
   Slab_Solver.vcxproj -> C:\Users\Robert\Programming\C++\Slab_Solver\Slab_Solver\Debug\Slab_Solver.exe
