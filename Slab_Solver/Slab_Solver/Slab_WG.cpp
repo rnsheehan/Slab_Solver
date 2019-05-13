@@ -1922,7 +1922,9 @@ void coupled_slab_tl_neff::set_params(double separation, double width, double la
 double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 {
 	// Compute the coupling coefficient for the coupled waveguides
+	// theory taken from Okamoto, "Fundamentals of Optical Waveguides"
 	// returned value is in units of um^{-1}
+	// R. Sheehan 1 - 10 - 2018
 
 	try {
 		neff_search(mode);

@@ -230,6 +230,7 @@ private:
 };
 
 // class for computing the coupling coefficient of the coupled slab waveguide
+// R. Sheehan 1 - 10 - 2018
 
 class coupled_slab_tl_neff : public slab_tl_neff {
 
