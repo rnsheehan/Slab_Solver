@@ -497,6 +497,78 @@ void slab_tl_neff::neff_search(bool mode)
 	}
 }
 
+void slab_tl_neff::report(bool mode)
+{
+	// print the computed results to screen
+	std::cout << "Output for the slab waveguide calculator\n";
+	std::cout << "\n";
+	std::cout << "Waveguide width = " << d << " microns\n";
+	std::cout << "Wavelength = " << l << " microns\n";
+	std::cout << "Wavenumber = " << k << " inverse microns\n";
+	std::cout << "\n";
+	std::cout << "Core Index = " << nc << "\n";
+	std::cout << "Substrate Index = " << ns << "\n";
+	std::cout << "Cladding Index = " << ncl << "\n";
+	std::cout << "\n";
+	std::cout << "Numerical Aperture = " << na << "\n";
+	std::cout << "V-Parameter = " << V << "\n";
+	std::cout << "Number of Modes = " << M << "\n";
+	std::cout << "\n";
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::cout << pol << " Modes\n";
+	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
+
+	for (int i = 0; i < nbeta(mode); i++) {
+		std::cout << pol + "_{" << i + 1 << "} = " << std::setprecision(10) << _beta(i, mode) << " , n_eff_{" << i + 1 << "} = " << std::setprecision(10) << (_beta(i, mode) / k) << "\n";
+	}
+	std::cout << "\n";
+}
+
+int slab_tl_neff::get_nmodes(bool mode)
+{
+	// return the number of computed propagation constants for a given polarisation
+	// it can be the case that the predicted value M is greater than the actual number of modes in a waveguide
+
+	return nbeta(mode);
+}
+
+double slab_tl_neff::get_neff(int i, bool mode)
+{
+	// return the i^{th} effective index for a given polarisation
+	// by convention mode == true => TE modes, mode == false => TM modes
+
+	try {
+		if (nbeta(mode) > 0) {
+			if (i<0 || i > nbeta(mode)) {
+				throw std::range_error("Error: double slab_tl_neff::get_neff(int i, bool t)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				if (mode) {
+					return betaE[i] / k;
+				}
+				else {
+					return betaH[i] / k;
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument("Error: double slab_tl_neff::get_neff(int i, bool t)\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error & e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument & e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
 // Definitions for the three layer slab with optical mode profile calculation
 slab_tl_mode::slab_tl_mode(void)
 {
@@ -580,7 +652,7 @@ void slab_tl_mode::output_modes(bool mode, int N, double Lx, std::string &storag
 		}
 
 		// output the sine-cosine form of the dispersion equation
-		double db = ((upper - lower) / (100 - 1));
+		double db = ((upper - lower) / (99));
 
 		filename = storage_directory + pol + "_Dispersion_Eqn.txt";
 		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
@@ -1953,6 +2025,60 @@ double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 		}
 	}
 	catch (std::runtime_error &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+// definitions for the coupled slabs class
+coupled_slabs::coupled_slabs()
+{
+	// default constructor
+	slab_sep = 0.0; 
+}
+
+coupled_slabs::coupled_slabs(double W1, double W2, double separ, double lambda, double ncore1, double ncore2, double nsub)
+{
+	// primary constructor
+	set_params(W1, W2, separ, lambda, ncore1, ncore2, nsub);
+}
+
+void coupled_slabs::set_params(double W1, double W2, double pitch, double lambda, double ncore1, double ncore2, double nsub)
+{
+	// Method for assigning values to each of the WG
+	
+	try {
+		bool c1 = W1 > 0.0 ? true : false; 
+		bool c2 = W2 > 0.0 ? true : false; 
+		bool c3 = pitch > 0.5*(W1+W2) ? true : false; 
+		bool c4 = lambda > 0.0 ? true : false; 
+		bool c5 = nsub > 0.0 ? true : false; 
+		bool c6 = ncore1 > nsub ? true : false; 
+		bool c7 = ncore2 > nsub ? true : false; 
+		bool c10 = c1 && c2 && c3 && c4 && c5 && c6 && c7; 
+		
+		if (c10) {
+			slab_sep = pitch; 			
+
+			WGA.set_params(W1, lambda, ncore1, nsub, nsub); 
+
+			WGB.set_params(W2, lambda, ncore2, nsub, nsub); 
+		}
+		else {
+			std::string reason = "Error: void coupled_slabs::set_params(double W1, double W2, double separ, double lambda, double ncore1, double ncore2, double nsub)\n";
+			if (!c1) reason += "WGA width = " + template_funcs::toString(W1, 3) + " is negative\n";
+			if (!c2) reason += "WGB width = " + template_funcs::toString(W2, 3) + " is negative\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+			if (!c4) reason += "Wavelength = " + template_funcs::toString(lambda, 3) + " is negative\n";
+			
+			if (!c5) reason += "Substrate Index = " + template_funcs::toString(nsub, 3) + " is too small\n";
+			if (!c6) reason += "WGA Index = " + template_funcs::toString(ncore1, 3) + " is too small\n";			
+			if (!c7) reason += "WGB Index = " + template_funcs::toString(ncore2, 3) + " is too small\n";			
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument & e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}

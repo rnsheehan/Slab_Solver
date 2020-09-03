@@ -87,12 +87,6 @@ public:
 
 	void neff_search(bool mode); // compute the effective indices for a waveguide
 
-	void report(bool mode);
-
-	int get_nmodes(bool mode); // return the number of computed modes
-
-	double get_neff(int i, bool mode); // return the ith computed effective index 
-
 private:
 	// methods that the user does not need access to
 
@@ -207,12 +201,6 @@ public:
 	void set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
 
 	void neff_search(bool mode);
-	
-	void report(bool mode);
-
-	int get_nmodes(bool mode); // return the number of computed modes
-
-	double get_neff(int i, bool mode); // return the ith computed effective index 
 
 private:
 	double eigeneqn_b(double x, int mm, bool t);
@@ -270,17 +258,7 @@ class coupled_slabs {
 public:
 	coupled_slabs(); 
 
-	coupled_slabs(double W1, double W2, double pitch, double lambda, double ncore1, double ncore2, double nsub);
 
-	void set_params(double W1, double W2, double pitch, double lambda, double ncore1, double ncore2, double nsub);
-
-
-
-private: 
-	double slab_sep; // separation between WG	
-
-	slab_tl_mode WGA; 
-	slab_tl_mode WGB; 
 };
 
 #endif
