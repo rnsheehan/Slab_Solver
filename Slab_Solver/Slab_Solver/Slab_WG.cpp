@@ -237,6 +237,8 @@ void slab_tl_neff::set_params(double width, double lambda, double ncore, double 
 
 			d = width;
 
+			tt = 0.5 * d; 
+
 			l = lambda;
 
 			nc = ncore;
@@ -981,13 +983,12 @@ double slab_tl_mode::TE_TM(double x, int i, bool mode)
 				return 0;
 			}
 			else {
-				double t = d / 2;
 
-				if (x > t) {
-					return norm_const(i, mode)*cos(h(i, mode)*t - phase(i, mode))*exp(-q(i, mode)*(x - t)); // Cladding
+				if (x > tt) {
+					return norm_const(i, mode)*cos(h(i, mode)*tt - phase(i, mode))*exp(-q(i, mode)*(x - tt)); // Cladding
 				}
-				else if (x < -t) {
-					return norm_const(i, mode)*cos(h(i, mode)*t + phase(i, mode))*exp(p(i, mode)*(x + t)); // Substrate
+				else if (x < -tt) {
+					return norm_const(i, mode)*cos(h(i, mode)*tt + phase(i, mode))*exp(p(i, mode)*(x + tt)); // Substrate
 				}
 				else {
 					return norm_const(i, mode)*cos(h(i, mode)*x - phase(i, mode)); // Core
@@ -995,7 +996,7 @@ double slab_tl_mode::TE_TM(double x, int i, bool mode)
 			}
 		}
 		else {
-			throw std::invalid_argument("Error: double slab_tl_mode::TE_TM(int i, bool t)\nNo modes have been computed\n");
+			throw std::invalid_argument("Error: double slab_tl_mode::TE_TM(int i, bool mode)\nNo modes have been computed\n");
 			return 0;
 		}
 	}
@@ -1096,6 +1097,8 @@ void slab_fl_neff_A::set_params(double width, double rib_width, double lambda, d
 		if (c1 && c1a && c2 && c3 && c4 && c5 && c6 && c7) {
 
 			d = width;
+
+			tt = 0.5 * d;
 
 			dr = rib_width; 
 
@@ -1541,6 +1544,8 @@ void slab_fl_neff_B::set_params(double width, double rib_width, double lambda, d
 		if (c1 && c1a && c2 && c3 && c4 && c5 && c6 && c7) {
 
 			d = width;
+
+			tt = 0.5 * d; 
 
 			dr = rib_width;
 
@@ -2034,41 +2039,46 @@ double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 coupled_slabs::coupled_slabs()
 {
 	// default constructor
+	pol = TE; // going to assume TE polarisation for all calcs for simplicity
 	slab_sep = 0.0; 
 }
 
-coupled_slabs::coupled_slabs(double W1, double W2, double separ, double lambda, double ncore1, double ncore2, double nsub)
+coupled_slabs::coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
 {
 	// primary constructor
-	set_params(W1, W2, separ, lambda, ncore1, ncore2, nsub);
+	set_params(W1, W2, lambda, ncore1, ncore2, nsub);
 }
 
-void coupled_slabs::set_params(double W1, double W2, double pitch, double lambda, double ncore1, double ncore2, double nsub)
+void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
 {
 	// Method for assigning values to each of the WG
 	
 	try {
 		bool c1 = W1 > 0.0 ? true : false; 
 		bool c2 = W2 > 0.0 ? true : false; 
-		bool c3 = pitch > 0.5*(W1+W2) ? true : false; 
+		//bool c3 = pitch > 0.5*(W1+W2) ? true : false; 
 		bool c4 = lambda > 0.0 ? true : false; 
 		bool c5 = nsub > 0.0 ? true : false; 
 		bool c6 = ncore1 > nsub ? true : false; 
 		bool c7 = ncore2 > nsub ? true : false; 
-		bool c10 = c1 && c2 && c3 && c4 && c5 && c6 && c7; 
+		bool c10 = c1 && c2 && c4 && c5 && c6 && c7; 
 		
 		if (c10) {
-			slab_sep = pitch; 			
+			//slab_sep = pitch; 			
 
-			WGA.set_params(W1, lambda, ncore1, nsub, nsub); 
+			WGA.set_params(W1, lambda, ncore1, nsub, nsub); // assign the parameters to the slab object
+			
+			WGA.compute_neff(pol); // compute the effective indices of that slab
 
-			WGB.set_params(W2, lambda, ncore2, nsub, nsub); 
+			WGB.set_params(W2, lambda, ncore2, nsub, nsub); // assign the parameters to the slab object
+			
+			WGB.compute_neff(pol); // compute the effective indices of that slab
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::set_params(double W1, double W2, double separ, double lambda, double ncore1, double ncore2, double nsub)\n";
 			if (!c1) reason += "WGA width = " + template_funcs::toString(W1, 3) + " is negative\n";
 			if (!c2) reason += "WGB width = " + template_funcs::toString(W2, 3) + " is negative\n";
-			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+			//if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
 			if (!c4) reason += "Wavelength = " + template_funcs::toString(lambda, 3) + " is negative\n";
 			
 			if (!c5) reason += "Substrate Index = " + template_funcs::toString(nsub, 3) + " is too small\n";
@@ -2077,6 +2087,23 @@ void coupled_slabs::set_params(double W1, double W2, double pitch, double lambda
 
 			throw std::invalid_argument(reason);
 		}
+	}
+	catch (std::invalid_argument & e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void coupled_slabs::compute_coefficients(double pitch)
+{
+	// Compute the various coupling coefficients
+
+	try {
+		
+		// Start by checking that you can plot the mode profiles together with the correct separations
+		// Then check that you can integrate the mode profiles over an appropriate range
+		// Then test calculation of C and K
+
 	}
 	catch (std::invalid_argument & e) {
 		useful_funcs::exit_failure_output(e.what());

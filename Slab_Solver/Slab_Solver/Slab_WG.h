@@ -30,6 +30,7 @@ protected:
 	int M; // Predicted number of modes that waveguide can support
 
 	double d; // Waveguide Width
+	double tt; // Half Waveguide Width
 	double dr; // Rib Width
 	double nc; // Core Index
 	double ncl; // Cladding Index
@@ -270,14 +271,18 @@ class coupled_slabs {
 public:
 	coupled_slabs(); 
 
-	coupled_slabs(double W1, double W2, double pitch, double lambda, double ncore1, double ncore2, double nsub);
+	coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub);
 
-	void set_params(double W1, double W2, double pitch, double lambda, double ncore1, double ncore2, double nsub);
+	void set_params(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub);
 
-
+	void compute_coefficients(double pitch); 
 
 private: 
+	bool pol; // going to assume TE polarisation for simplicity
+
 	double slab_sep; // separation between WG	
+
+
 
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 

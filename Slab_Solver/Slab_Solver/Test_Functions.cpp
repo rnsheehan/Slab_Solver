@@ -29,7 +29,7 @@ void testing::slab_wg_mode_calc()
 
 	double W, WL, Nc, Ns, Ncl; 
 
-	W = 1.0;  WL = 1.55; 
+	W = 2.0;  WL = 1.55; 
 	Nc = 3.38; Ns = 3.17; Ncl = 3.17;
 
 	//W = 1.7;  WL = 6.158;
@@ -61,15 +61,15 @@ void testing::slab_wg_mode_calc()
 	std::cout << "TM Fund Mode Field value at origin: ";
 	std::cout << sl_obj.TE_TM(0.0, 0, TM) << "\n\n";
 
-	/*int N = 501; 
-	double Lz = 3.0; 
+	int N = 501; 
+	double Lz = 3.5*W; 
 	std::string stor = ""; 
 
 	sl_obj.output_all_stats(stor);
 
 	sl_obj.output_modes(TE, N, Lz, stor); 
 
-	std::cout << "Complete\n";*/
+	std::cout << "Complete\n";
 }
 
 void testing::fl_slab_wg_neff_calc()
