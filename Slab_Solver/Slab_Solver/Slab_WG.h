@@ -209,11 +209,11 @@ public:
 
 	void neff_search(bool mode);
 	
-	void report(bool mode);
+	//void report(bool mode);
 
-	int get_nmodes(bool mode); // return the number of computed modes
+	//int get_nmodes(bool mode); // return the number of computed modes
 
-	double get_neff(int i, bool mode); // return the ith computed effective index 
+	//double get_neff(int i, bool mode); // return the ith computed effective index 
 
 private:
 	double eigeneqn_b(double x, int mm, bool t);
@@ -275,14 +275,18 @@ public:
 
 	void set_params(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub);
 
-	void compute_coefficients(double pitch); 
+	void compute_coefficients(double pitch);
+
+	void output_modes(double pitch); 
 
 private: 
 	bool pol; // going to assume TE polarisation for simplicity
+	bool wg_defined; 
 
-	double slab_sep; // separation between WG	
-
-
+	// It's easier to store these values in the class than to try and access them through the waveguide objects
+	double slab_sep; // separation between WG
+	double WA; // width of WGA
+	double WB; // width of WGB
 
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 

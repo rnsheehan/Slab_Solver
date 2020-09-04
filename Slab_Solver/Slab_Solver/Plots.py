@@ -27,7 +27,8 @@ def mode_plot():
     ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
 
     try:
-        filename = "TE_Mode_Profiles.txt"
+        #filename = "TE_Mode_Profiles.txt"
+        filename = "Coupled_Mode_Profiles.txt"
             
         if glob.glob(filename):
             # import the dataset

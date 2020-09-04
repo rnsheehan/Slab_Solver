@@ -16,6 +16,8 @@ namespace testing {
 
 	void coupled_slab_wg_calc(); 
 
+	void coupled_slab(); 
+
 }
 
 #endif

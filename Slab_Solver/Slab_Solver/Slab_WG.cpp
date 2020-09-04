@@ -10,7 +10,7 @@ slab::slab(void)
 	M = 0;
 
 	k_sqr = nc_sqr = ncl_sqr = ns_sqr = nr_sqr = nm_sqr = k_sqr_nc_sqr = k_sqr_ns_sqr = k_sqr_ncl_sqr = k_sqr_nr_sqr = 0.0;
-	k_sqr_nm_sqr = aa = bb = d = dr = l = nc = ns = ncl = nr = nm = etacr = etacs = etarcl = 0.0;
+	k_sqr_nm_sqr = aa = bb = d = tt = dr = l = nc = ns = ncl = nr = nm = etacr = etacs = etarcl = 0.0;
 	V = na = k = lower = upper = upper = w = efieldint = hfieldint = 0.0;
 }
 
@@ -2039,8 +2039,9 @@ double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 coupled_slabs::coupled_slabs()
 {
 	// default constructor
+	wg_defined = false; 
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
-	slab_sep = 0.0; 
+	WA = WB = slab_sep = 0.0; 
 }
 
 coupled_slabs::coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
@@ -2056,7 +2057,6 @@ void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore
 	try {
 		bool c1 = W1 > 0.0 ? true : false; 
 		bool c2 = W2 > 0.0 ? true : false; 
-		//bool c3 = pitch > 0.5*(W1+W2) ? true : false; 
 		bool c4 = lambda > 0.0 ? true : false; 
 		bool c5 = nsub > 0.0 ? true : false; 
 		bool c6 = ncore1 > nsub ? true : false; 
@@ -2064,21 +2064,23 @@ void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore
 		bool c10 = c1 && c2 && c4 && c5 && c6 && c7; 
 		
 		if (c10) {
-			//slab_sep = pitch; 			
+
+			WA = W1; WB = W2; // store the parameters locally
 
 			WGA.set_params(W1, lambda, ncore1, nsub, nsub); // assign the parameters to the slab object
 			
 			WGA.compute_neff(pol); // compute the effective indices of that slab
-
+			
 			WGB.set_params(W2, lambda, ncore2, nsub, nsub); // assign the parameters to the slab object
 			
 			WGB.compute_neff(pol); // compute the effective indices of that slab
+
+			wg_defined = true; 
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::set_params(double W1, double W2, double separ, double lambda, double ncore1, double ncore2, double nsub)\n";
 			if (!c1) reason += "WGA width = " + template_funcs::toString(W1, 3) + " is negative\n";
 			if (!c2) reason += "WGB width = " + template_funcs::toString(W2, 3) + " is negative\n";
-			//if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
 			if (!c4) reason += "Wavelength = " + template_funcs::toString(lambda, 3) + " is negative\n";
 			
 			if (!c5) reason += "Substrate Index = " + template_funcs::toString(nsub, 3) + " is too small\n";
@@ -2104,8 +2106,64 @@ void coupled_slabs::compute_coefficients(double pitch)
 		// Then check that you can integrate the mode profiles over an appropriate range
 		// Then test calculation of C and K
 
+		bool c3 = pitch > 0.5*(WA + WB) ? true : false; 
+
+		if (c3 && wg_defined) {
+			
+		}
+		else {
+			std::string reason = "Error: void coupled_slabs::compute_coefficients(double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n"; 
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+			
+			throw std::invalid_argument(reason);
+		}
 	}
 	catch (std::invalid_argument & e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void coupled_slabs::output_modes(double pitch)
+{
+	// output the modes in the same file separated by their pitch
+	
+	try {
+
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+
+		if (c3 && wg_defined) {
+			int N = 501; 
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
+			double x0 = xmid - 0.5 * Lx; // start computing solutions here
+			double dx = Lx / (N - 1); 
+
+			std::string filename = "Coupled_Mode_Profiles.txt";
+			std::ofstream write;
+
+			write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+			if (write.is_open()) {
+				
+				for (int i = 0; i < N; i++) {
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0 - pitch, 0, pol) << "\n"; 
+					x0 += dx; 
+				}
+
+				write.close(); 
+			}
+		}
+		else {
+			std::string reason = "Error: void coupled_slabs::output_modes(double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}

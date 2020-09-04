@@ -1,7 +1,7 @@
 Program Exit Explanation
 
-Error occurred: Tue Oct 16 10:13:45 2018
+Error occurred: Fri Sep  4 12:29:40 2020
 
-Error: void slab_fl_neff_B::set_params(double width,double lambda,double ncore,double nsub,double nclad)
-Core Index = 3.380 is less than rib / substrate index
+Error: void coupled_slabs::output_modes(double pitch)
+WG pitch = 1.750 is too small
 

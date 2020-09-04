@@ -1,3 +1,4 @@
+
 #ifndef ATTACH_H
 #include "Attach.h"
 #endif
@@ -9,11 +10,13 @@
 int main()
 {
 
-	testing::slab_wg_mode_calc(); 
+	//testing::slab_wg_mode_calc(); 
 
 	//testing::fl_slab_wg_neff_calc(); 
 
 	//testing::coupled_slab_wg_calc(); 
+
+	testing::coupled_slab(); 
 
 	std::cout << "Press return to close\n";
 	std::cin.get(); 
