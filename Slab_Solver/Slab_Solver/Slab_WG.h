@@ -279,6 +279,12 @@ public:
 
 	void output_modes(double pitch); 
 
+private:
+	double integrate_modes(int integrand, double x1, double x2, double pitch);
+	double integrate_AA(double x1, double x2, double pitch); 
+	double integrate_BB(double x1, double x2, double pitch); 
+	double integrate_AB(double x1, double x2, double pitch); 
+
 private: 
 	bool pol; // going to assume TE polarisation for simplicity
 	bool wg_defined; 

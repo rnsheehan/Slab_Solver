@@ -2168,3 +2168,332 @@ void coupled_slabs::output_modes(double pitch)
 		exit(EXIT_FAILURE);
 	}
 }
+
+//double coupled_slabs::integrate_modes(int integrand, double x1, double x2, double pitch)
+//{
+//	// dynamic binding version is much simpler to implement and understand and debug
+//	// R. Sheehan 9 - 9 - 2020
+//
+//	// compute the integral of the modes based on the choice of integrand
+//	// integrand == 0 => pq == aa => E_{ay} E_{ay}
+//	// integrand == 1 => pq == bb => E_{by} E_{by}
+//	// integrand == 2 => pq == ab => E_{ay} E_{by}
+//	// integrand == 3 => pq == ba => E_{by} E_{ay}
+//
+//	try {
+//		bool c1 = fabs(x2 - x1) > EPS ? true : false;
+//		bool c2 = integrand > -1 && integrand < 4 ? true : false; 
+//		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+//		bool c10 = c1 && c3; 
+//
+//		if (c10 && wg_defined) {
+//			int N = 501;
+//			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+//			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
+//			double x0 = xmid - 0.5 * Lx; // start computing solutions here
+//			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
+//			double dx = Lx / (N - 1);
+//			double first, last, term, integral, sum = 0.0; 
+//
+//			// there's no point in actually having two function evaluations is there?
+//			// use a switch to evaluate both mode solution values only when required
+//			// otherwise compute one value and square it
+//			bool evaluate_each_mode = false; 
+//
+//			// Use a pointer to the slab waveguide object to access the data stored therein
+//			// this will obviate the need to repeatedly decide which integrand must be specified
+//			// during the loop for computing the integrals
+//
+//			slab_tl_mode* md1 = NULL; 
+//			slab_tl_mode* md2 = NULL;
+//			
+//			if (integrand == 0) {
+//				// integrand == 0 => pq == aa => E_{ay} E_{ay}
+//				md1 = &WGA; 
+//				md2 = &WGA; 
+//				evaluate_each_mode = false; // tell alg. to evaluate value of field in WGA only and square it
+//			}
+//			else if (integrand == 1) {
+//				// integrand == 1 => pq == bb => E_{by} E_{by}
+//				md1 = &WGB;
+//				md2 = &WGB;
+//				evaluate_each_mode = false; // tell alg. to evaluate value of field in WGB only and square it
+//			}
+//			else if (integrand == 2 || integrand == 3) {
+//				// integrand == 2 => pq == ab => E_{ay} E_{by}
+//				// integrand == 3 => pq == ba => E_{by} E_{ay}
+//				md1 = &WGA;
+//				md2 = &WGB;
+//				evaluate_each_mode = true; // tell alg. to evaluate value of field in both WG
+//			}
+//			else {
+//				// you done fucked up bro!
+//				// you should not be here!
+//				// program will have already crashed 
+//				// if integrand < 0 || integrand > 3
+//			}
+//
+//			// you still end up having to make decisions at each step of the loop 
+//			// the question is whether or not it is more efficient to 
+//			// a) have a single function requiring multiple decisions at each step
+//			// b) have multiple functions that essentially do the same thing but each function operates on a different integrand
+//			// Is dynamic binding more efficient than if-else? 
+//			// The answer seems to be that from an efficiency POV it doesn't matter, switches and dynamic binding are equally fast
+//			// However, from code design and maintenance and scalability POV then dynamic binding is definitely better
+//			// because it becomes much easier to add cases as the need arises
+//			// https://stackoverflow.com/questions/2681337/dynamical-binding-or-switch-case
+//			// I would agree that it will be easier to debug the individual cases so I might go that way. 
+//
+//			// Evaluate the integral using the trapezoidal rule
+//
+//			// compute first term in the sum
+//			if (evaluate_each_mode) {
+//				// you must be computing an integral of E_{ay} E_{by}
+//				first = md1->TE_TM(x0, 0, pol) * md2->TE_TM(xoff, 0, pol);
+//			}
+//			else {
+//				// you must be computing an integral of E_{ay} E_{ay} or E_{by} E_{by} 
+//				first = template_funcs::DSQR(integrand == 0 ? md1->TE_TM(x0, 0, pol) : md1->TE_TM(xoff, 0, pol));
+//			}
+//
+//			// update position
+//			x0 += dx;
+//			xoff += dx;
+//
+//			// sum over the middle terms 
+//			for (int i = 1; i < N-1; i++) {
+//				
+//				if (evaluate_each_mode) {
+//					// you must be computing an integral of E_{ay} E_{by}
+//					term = md1->TE_TM(x0, 0, pol) * md2->TE_TM(xoff, 0, pol);
+//				}
+//				else {
+//					// you must be computing an integral of E_{ay} E_{ay} or E_{by} E_{by} 
+//					term = template_funcs::DSQR( integrand == 0 ? md1->TE_TM(x0, 0, pol) : md1->TE_TM(xoff, 0, pol) ); 
+//				}
+//				
+//				sum += term;
+//
+//				// update position
+//				x0 += dx;
+//				xoff += dx; 
+//			}
+//
+//			// compute last term in the sum
+//			if (evaluate_each_mode) {
+//				// you must be computing an integral of E_{ay} E_{by}
+//				last = md1->TE_TM(x0, 0, pol) * md2->TE_TM(xoff, 0, pol);
+//			}
+//			else {
+//				// you must be computing an integral of E_{ay} E_{ay} or E_{by} E_{by} 
+//				last = template_funcs::DSQR( integrand == 0 ? md1->TE_TM(x0, 0, pol) : md1->TE_TM(xoff, 0, pol));
+//			}
+//
+//			integral = 0.5 * dx * (first + last + 2.0 * sum); 
+//
+//			return integral; 
+//		}
+//		else {
+//			return 0; 
+//
+//			std::string reason = "Error: double coupled_slabs::integrate_modes(double x1, double x2, double pitch)\n";
+//			if (!wg_defined) reason += "WG parameters are not defined\n";
+//			if (!c1) reason += "Integration Limits are not correct\n";
+//			if (!c2) reason += "Integrand not correctly specified\n";
+//			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+//
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument& e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
+
+double coupled_slabs::integrate_AA(double x1, double x2, double pitch)
+{
+	// compute the integral of E_{ay} E_{ay}
+	
+	try {
+		bool c1 = fabs(x2 - x1) > EPS ? true : false;
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+		bool c10 = c1 && c3;
+
+		if (c10 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
+			double x0 = xmid - 0.5 * Lx; // start computing solutions here
+			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
+			double dx = Lx / (N - 1);
+			double first, last, term, integral, sum = 0.0;
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = template_funcs::DSQR( WGA.TE_TM(x0, 0, pol) );
+
+			// update position
+			x0 += dx;
+			xoff += dx;
+
+			// sum over the middle terms 
+			for (int i = 1; i < N - 1; i++) {
+
+				term = template_funcs::DSQR( WGA.TE_TM(x0, 0, pol) );
+
+				sum += term;
+
+				// update position
+				x0 += dx;
+				xoff += dx;
+			}
+
+			// compute last term in the sum
+			last = template_funcs::DSQR( WGA.TE_TM(x0, 0, pol) );
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_AA(double x1, double x2, double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double coupled_slabs::integrate_BB(double x1, double x2, double pitch)
+{
+	// compute the integral of E_{by} E_{by}
+
+	try {
+		bool c1 = fabs(x2 - x1) > EPS ? true : false;
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+		bool c10 = c1 && c3;
+
+		if (c10 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
+			double x0 = xmid - 0.5 * Lx; // start computing solutions here
+			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
+			double dx = Lx / (N - 1);
+			double first, last, term, integral, sum = 0.0;
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = template_funcs::DSQR(WGB.TE_TM(xoff, 0, pol));
+
+			// update position
+			xoff += dx;
+
+			// sum over the middle terms 
+			for (int i = 1; i < N - 1; i++) {
+
+				term = template_funcs::DSQR(WGB.TE_TM(xoff, 0, pol));
+
+				sum += term;
+
+				// update position
+				xoff += dx;
+			}
+
+			// compute last term in the sum
+			last = template_funcs::DSQR(WGB.TE_TM(xoff, 0, pol));
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_BB(double x1, double x2, double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double coupled_slabs::integrate_AB(double x1, double x2, double pitch)
+{
+	// compute the integral of E_{ay} E_{by}
+
+	try {
+		bool c1 = fabs(x2 - x1) > EPS ? true : false;
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+		bool c10 = c1 && c3;
+
+		if (c10 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
+			double x0 = xmid - 0.5 * Lx; // start computing solutions here
+			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
+			double dx = Lx / (N - 1);
+			double first, last, term, integral, sum = 0.0;
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = ( WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol) );
+
+			// update position
+			x0 += dx;
+			xoff += dx;
+
+			// sum over the middle terms 
+			for (int i = 1; i < N - 1; i++) {
+
+				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+				sum += term;
+
+				// update position
+				x0 += dx;
+				xoff += dx;
+			}
+
+			// compute last term in the sum
+			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_AB(double x1, double x2, double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
