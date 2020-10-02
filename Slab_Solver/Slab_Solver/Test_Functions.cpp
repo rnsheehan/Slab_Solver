@@ -186,7 +186,7 @@ void testing::coupled_slab()
 	// test the operation of the coupled slab calculator
 	// R. Sheehan 4 - 9 - 2020
 
-	double Wa = 1.5, Wb = 1.5, l = 1.55, ncorea = 3.38, ncoreb = 3.38, nsub = 3.17, pitch = 3.0; 
+	double Wa = 1.5, Wb = 2.0, l = 1.55, ncorea = 3.38, ncoreb = 3.4, nsub = 3.17, pitch = 1.85; 
 
 	coupled_slabs wg_pair; 
 

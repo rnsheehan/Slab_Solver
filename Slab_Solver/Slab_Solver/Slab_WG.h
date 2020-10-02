@@ -295,9 +295,12 @@ private:
 	bool wg_defined; 
 
 	// It's easier to store these values in the class than to try and access them through the waveguide objects
+	double cw1, cw2; // constants needed in the calculation
 	double WA; // width of WGA
 	double WB; // width of WGB
 	double wavel; // wavelength at which calculation takes place
+	double wavenum; // wavenumber 
+	double omega; // frequency
 	double n_core_A; // RI in core of A
 	double n_core_B; // RI in core of B
 	double n_sub; // RI in shared substrate
