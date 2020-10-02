@@ -280,10 +280,15 @@ public:
 	void output_modes(double pitch); 
 
 private:
-	double integrate_modes(int integrand, double x1, double x2, double pitch);
-	double integrate_AA(double x1, double x2, double pitch); 
-	double integrate_BB(double x1, double x2, double pitch); 
-	double integrate_AB(double x1, double x2, double pitch); 
+	//double integrate_modes(int integrand, double x1, double x2, double pitch);
+	double integrate_CAA(double pitch, bool loud = false); 
+	double integrate_CBB(double pitch, bool loud = false);
+	double integrate_CAB(double pitch, bool loud = false);
+
+	double integrate_KAA(double pitch, bool loud = false);
+	double integrate_KBB(double pitch, bool loud = false);
+	double integrate_KAB(double pitch, bool loud = false);
+	double integrate_KBA(double pitch, bool loud = false);
 
 private: 
 	bool pol; // going to assume TE polarisation for simplicity

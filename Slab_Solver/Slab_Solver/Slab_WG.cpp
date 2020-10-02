@@ -2109,7 +2109,27 @@ void coupled_slabs::compute_coefficients(double pitch)
 		bool c3 = pitch > 0.5*(WA + WB) ? true : false; 
 
 		if (c3 && wg_defined) {
+
+			bool loud = false; 
+
+			double CAA = integrate_CAA(pitch, loud); 
+			double CBB = integrate_CBB(pitch, loud);
+			double CAB = integrate_CAB(pitch, loud);
 			
+			double KAA = integrate_KAA(pitch, loud);
+			double KBB = integrate_KBB(pitch, loud);
+			double KAB = integrate_KAB(pitch, loud);
+			double KBA = integrate_KBA(pitch, loud);
+
+			std::cout << "Computed Coefficients\n"; 
+			std::cout << "C_{aa} = " << CAA << "\n"; 
+			std::cout << "C_{bb} = " << CBB << "\n"; 
+			std::cout << "C_{ab} = " << CAB << "\n\n";
+			std::cout << "K_{aa} = " << KAA << "\n";
+			std::cout << "K_{bb} = " << KBB << "\n";
+			std::cout << "K_{ab} = " << KAB << "\n";
+			std::cout << "K_{ba} = " << KBA << "\n\n";
+
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::compute_coefficients(double pitch)\n";
@@ -2311,23 +2331,29 @@ void coupled_slabs::output_modes(double pitch)
 //	}
 //}
 
-double coupled_slabs::integrate_AA(double x1, double x2, double pitch)
+double coupled_slabs::integrate_CAA(double pitch, bool loud)
 {
-	// compute the integral of E_{ay} E_{ay}
+	// compute the overlap integral of E_{ay} E_{ay}
 	
 	try {
-		bool c1 = fabs(x2 - x1) > EPS ? true : false;
+		//bool c1 = fabs(x2 - x1) > EPS ? true : false;
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
-		bool c10 = c1 && c3;
+		//bool c10 = c1 && c3;
 
-		if (c10 && wg_defined) {
+		if (c3 && wg_defined) {
 			int N = 501;
 			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
 			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
 			double x0 = xmid - 0.5 * Lx; // start computing solutions here
-			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
 			double dx = Lx / (N - 1);
 			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_CAA_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
 
 			// Evaluate the integral using the trapezoidal rule
 
@@ -2336,10 +2362,13 @@ double coupled_slabs::integrate_AA(double x1, double x2, double pitch)
 
 			// update position
 			x0 += dx;
-			xoff += dx;
 
 			// sum over the middle terms 
 			for (int i = 1; i < N - 1; i++) {
+
+				if (loud) {
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0 , 0, pol) << "\n";
+				}
 
 				term = template_funcs::DSQR( WGA.TE_TM(x0, 0, pol) );
 
@@ -2347,7 +2376,10 @@ double coupled_slabs::integrate_AA(double x1, double x2, double pitch)
 
 				// update position
 				x0 += dx;
-				xoff += dx;
+			}
+
+			if (loud) {
+				write.close(); 
 			}
 
 			// compute last term in the sum
@@ -2360,9 +2392,9 @@ double coupled_slabs::integrate_AA(double x1, double x2, double pitch)
 		else {
 			return 0;
 
-			std::string reason = "Error: double coupled_slabs::integrate_AA(double x1, double x2, double pitch)\n";
+			std::string reason = "Error: double coupled_slabs::integrate_CAA(double pitch)\n";
 			if (!wg_defined) reason += "WG parameters are not defined\n";
-			if (!c1) reason += "Integration Limits are not correct\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
 			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
 
 			throw std::invalid_argument(reason);
@@ -2374,16 +2406,16 @@ double coupled_slabs::integrate_AA(double x1, double x2, double pitch)
 	}
 }
 
-double coupled_slabs::integrate_BB(double x1, double x2, double pitch)
+double coupled_slabs::integrate_CBB(double pitch, bool loud)
 {
-	// compute the integral of E_{by} E_{by}
+	// compute the overlap integral of E_{by} E_{by}
 
 	try {
-		bool c1 = fabs(x2 - x1) > EPS ? true : false;
+		//bool c1 = fabs(x2 - x1) > EPS ? true : false;
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
-		bool c10 = c1 && c3;
+		//bool c10 = c1 && c3;
 
-		if (c10 && wg_defined) {
+		if (c3 && wg_defined) {
 			int N = 501;
 			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
 			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
@@ -2391,6 +2423,13 @@ double coupled_slabs::integrate_BB(double x1, double x2, double pitch)
 			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
 			double dx = Lx / (N - 1);
 			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_CBB_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
 
 			// Evaluate the integral using the trapezoidal rule
 
@@ -2403,12 +2442,20 @@ double coupled_slabs::integrate_BB(double x1, double x2, double pitch)
 			// sum over the middle terms 
 			for (int i = 1; i < N - 1; i++) {
 
+				if (loud) {
+					write << std::setprecision(10) << xoff << " , " << WGB.TE_TM(xoff, 0, pol) << " , " << WGB.TE_TM(xoff, 0, pol) << "\n";
+				}
+
 				term = template_funcs::DSQR(WGB.TE_TM(xoff, 0, pol));
 
 				sum += term;
 
 				// update position
 				xoff += dx;
+			}
+
+			if (loud) {
+				write.close();
 			}
 
 			// compute last term in the sum
@@ -2421,9 +2468,9 @@ double coupled_slabs::integrate_BB(double x1, double x2, double pitch)
 		else {
 			return 0;
 
-			std::string reason = "Error: double coupled_slabs::integrate_BB(double x1, double x2, double pitch)\n";
+			std::string reason = "Error: double coupled_slabs::integrate_CBB(double pitch)\n";
 			if (!wg_defined) reason += "WG parameters are not defined\n";
-			if (!c1) reason += "Integration Limits are not correct\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
 			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
 
 			throw std::invalid_argument(reason);
@@ -2435,16 +2482,14 @@ double coupled_slabs::integrate_BB(double x1, double x2, double pitch)
 	}
 }
 
-double coupled_slabs::integrate_AB(double x1, double x2, double pitch)
+double coupled_slabs::integrate_CAB(double pitch, bool loud)
 {
-	// compute the integral of E_{ay} E_{by}
+	// compute the overlap integral of E_{ay} E_{by}
 
 	try {
-		bool c1 = fabs(x2 - x1) > EPS ? true : false;
-		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
-		bool c10 = c1 && c3;
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;		
 
-		if (c10 && wg_defined) {
+		if (c3 && wg_defined) {
 			int N = 501;
 			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
 			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
@@ -2452,6 +2497,13 @@ double coupled_slabs::integrate_AB(double x1, double x2, double pitch)
 			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
 			double dx = Lx / (N - 1);
 			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_CAB_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
 
 			// Evaluate the integral using the trapezoidal rule
 
@@ -2465,6 +2517,10 @@ double coupled_slabs::integrate_AB(double x1, double x2, double pitch)
 			// sum over the middle terms 
 			for (int i = 1; i < N - 1; i++) {
 
+				if (loud) {
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(xoff, 0, pol) << "\n";
+				}
+
 				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
 
 				sum += term;
@@ -2472,6 +2528,10 @@ double coupled_slabs::integrate_AB(double x1, double x2, double pitch)
 				// update position
 				x0 += dx;
 				xoff += dx;
+			}
+
+			if (loud) {
+				write.close();
 			}
 
 			// compute last term in the sum
@@ -2484,9 +2544,307 @@ double coupled_slabs::integrate_AB(double x1, double x2, double pitch)
 		else {
 			return 0;
 
-			std::string reason = "Error: double coupled_slabs::integrate_AB(double x1, double x2, double pitch)\n";
+			std::string reason = "Error: double coupled_slabs::integrate_CAB(double pitch)\n";
 			if (!wg_defined) reason += "WG parameters are not defined\n";
-			if (!c1) reason += "Integration Limits are not correct\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double coupled_slabs::integrate_KAA(double pitch, bool loud)
+{
+	// compute the coupling integral of E_{ay} E_{ay}
+
+	try {
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+
+		if (c3 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double dx = Lx / (N - 1);
+			double x0 = pitch - 0.5 * WB; 
+			double xend = pitch + 0.5 * WB; 
+			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_KAA_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = template_funcs::DSQR(WGA.TE_TM(x0, 0, pol));
+
+			// update position
+			x0 += dx;
+
+			// sum over the middle terms 
+			while(x0 < xend) {
+
+				if (loud) {
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGA.TE_TM(x0, 0, pol) << "\n";
+				}
+
+				term = template_funcs::DSQR(WGA.TE_TM(x0, 0, pol));
+
+				sum += term;
+
+				// update position
+				x0 += dx;
+			}
+
+			if (loud) {
+				write.close();
+			}
+
+			// compute last term in the sum
+			last = template_funcs::DSQR(WGA.TE_TM(x0, 0, pol));
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_KAA(double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double coupled_slabs::integrate_KBB(double pitch, bool loud)
+{
+	// compute the coupling integral of E_{by} E_{by}
+
+	try {
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+
+		if (c3 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double dx = Lx / (N - 1);
+			double x0 = -0.5*WA - pitch; // start computing solutions here
+			double xend = 0.5*WA - pitch; // stop computing solutions here
+			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_KBB_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = template_funcs::DSQR(WGB.TE_TM(x0, 0, pol));
+
+			// update position
+			x0 += dx;
+
+			// sum over the middle terms 
+			while(x0 < xend) {
+
+				if (loud) {
+					write << std::setprecision(10) << x0 << " , " << WGB.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0, 0, pol) << "\n";
+				}
+
+				term = template_funcs::DSQR(WGB.TE_TM(x0, 0, pol));
+
+				sum += term;
+
+				// update position
+				x0 += dx;
+			}
+
+			if (loud) {
+				write.close();
+			}
+
+			// compute last term in the sum
+			last = template_funcs::DSQR(WGB.TE_TM(x0, 0, pol));
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_KBB(double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double coupled_slabs::integrate_KAB(double pitch, bool loud)
+{
+	// compute the coupling integral of E_{ay} E_{by}
+
+	try {
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+
+		if (c3 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double dx = Lx / (N - 1);
+			double x0 = -0.5*WA; // start computing solutions here
+			double xend = 0.5*WA; // stop computing solutions here
+			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
+			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_KAB_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+			// update position
+			x0 += dx;
+			xoff += dx;
+
+			// sum over the middle terms 
+			while(x0 < xend) {
+
+				if (loud) {
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(xoff, 0, pol) << "\n";
+				}
+
+				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+				sum += term;
+
+				// update position
+				x0 += dx;
+				xoff += dx;
+			}
+
+			if (loud) {
+				write.close();
+			}
+
+			// compute last term in the sum
+			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_KAB(double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
+			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double coupled_slabs::integrate_KBA(double pitch, bool loud)
+{
+	// compute the coupling integral of E_{ay} E_{by}
+
+	try {
+		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+
+		if (c3 && wg_defined) {
+			int N = 501;
+			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
+			double dx = Lx / (N - 1);
+			double x0 = pitch - 0.5 * WB; // start computing solutions here
+			double xend = pitch + 0.5 * WB; // stop computing solutions here
+			double xoff = x0 - pitch; // use the offset value to evaluate mode solution in WGB
+			double first, last, term, integral, sum = 0.0;
+
+			std::string filename = "integrate_KBA_field_values.txt";
+			std::ofstream write;
+
+			if (loud) {
+				write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+			}
+
+			// Evaluate the integral using the trapezoidal rule
+
+			// compute first term in the sum
+			first = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+			// update position
+			x0 += dx;
+			xoff += dx;
+
+			// sum over the middle terms 
+			while (x0 < xend) {
+
+				if (loud) {
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(xoff, 0, pol) << "\n";
+				}
+
+				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+				sum += term;
+
+				// update position
+				x0 += dx;
+				xoff += dx;
+			}
+
+			if (loud) {
+				write.close();
+			}
+
+			// compute last term in the sum
+			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+
+			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			return integral;
+		}
+		else {
+			return 0;
+
+			std::string reason = "Error: double coupled_slabs::integrate_KBA(double pitch)\n";
+			if (!wg_defined) reason += "WG parameters are not defined\n";
+			//if (!c1) reason += "Integration Limits are not correct\n";
 			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
 
 			throw std::invalid_argument(reason);

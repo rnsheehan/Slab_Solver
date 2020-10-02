@@ -29,6 +29,7 @@ def mode_plot():
     try:
         #filename = "TE_Mode_Profiles.txt"
         filename = "Coupled_Mode_Profiles.txt"
+        #filename = "integrate_KBA_field_values.txt"
             
         if glob.glob(filename):
             # import the dataset
