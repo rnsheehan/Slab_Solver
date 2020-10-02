@@ -2041,7 +2041,7 @@ coupled_slabs::coupled_slabs()
 	// default constructor
 	wg_defined = false; 
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
-	WA = WB = slab_sep = 0.0; 
+	WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0; 
 }
 
 coupled_slabs::coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
@@ -2065,7 +2065,16 @@ void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore
 		
 		if (c10) {
 
-			WA = W1; WB = W2; // store the parameters locally
+			// store the parameters locally for an easy life
+			WA = W1; WB = W2; n_core_A = ncore1; n_core_B = ncore2; n_sub = nsub; wavel = lambda; 
+			
+			// w = k * SPEED_OF_LIGHT; 
+			double omega = (SPEED_OF_LIGHT * Two_PI) / wavel; 
+			double cw1 = ( EPSILON * omega ) / 4.0; // constant required in calculation
+			double cw2 = 2.0 * omega * MU; // constant required in calculation
+			de_A = ( cw1 * ( template_funcs::DSQR(n_core_B) - template_funcs::DSQR(n_sub) ) ) ;
+
+			de_B = ( cw1 * ( template_funcs::DSQR(n_core_A) - template_funcs::DSQR(n_sub) ) ) ;
 
 			WGA.set_params(W1, lambda, ncore1, nsub, nsub); // assign the parameters to the slab object
 			
@@ -2612,6 +2621,8 @@ double coupled_slabs::integrate_KAA(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
+			integral *= de_A; // multiply \Delta\epsilon_{a}
+
 			return integral;
 		}
 		else {
@@ -2684,6 +2695,8 @@ double coupled_slabs::integrate_KBB(double pitch, bool loud)
 			last = template_funcs::DSQR(WGB.TE_TM(x0, 0, pol));
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			integral *= de_B; // multiply \Delta\epsilon_{b}
 
 			return integral;
 		}
@@ -2761,6 +2774,8 @@ double coupled_slabs::integrate_KAB(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
+			integral *= de_B; // multiply \Delta\epsilon_{b}
+
 			return integral;
 		}
 		else {
@@ -2836,6 +2851,8 @@ double coupled_slabs::integrate_KBA(double pitch, bool loud)
 			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
+
+			integral *= de_A; // multiply \Delta\epsilon_{a}
 
 			return integral;
 		}

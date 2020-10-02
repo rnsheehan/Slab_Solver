@@ -295,9 +295,14 @@ private:
 	bool wg_defined; 
 
 	// It's easier to store these values in the class than to try and access them through the waveguide objects
-	double slab_sep; // separation between WG
 	double WA; // width of WGA
 	double WB; // width of WGB
+	double wavel; // wavelength at which calculation takes place
+	double n_core_A; // RI in core of A
+	double n_core_B; // RI in core of B
+	double n_sub; // RI in shared substrate
+	double de_A; // constant \Delta\epsilon_{a}
+	double de_B; // constant \Delta\epsilon_{b}
 
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 
