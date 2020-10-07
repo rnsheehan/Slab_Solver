@@ -1,7 +1,0 @@
-Program Exit Explanation
-
-Error occurred: Fri Oct  2 11:45:49 2020
-
-Error: void coupled_slabs::output_modes(double pitch)
-WG pitch = 1.800 is too small
-

@@ -2041,7 +2041,7 @@ coupled_slabs::coupled_slabs()
 	// default constructor
 	wg_defined = false; 
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
-	omega = wavenum = cw1 = cw2 = WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0; 
+	min_pitch = de_A = de_B = omega = wavenum = cw1 = cw2 = WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0;
 }
 
 coupled_slabs::coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
@@ -2067,6 +2067,8 @@ void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore
 
 			// store the parameters locally for an easy life
 			WA = W1; WB = W2; n_core_A = ncore1; n_core_B = ncore2; n_sub = nsub; wavel = lambda; 
+
+			min_pitch = 0.5 * (WA + WB);
 			
 			// w = k * SPEED_OF_LIGHT; 
 			wavenum = Two_PI / wavel; 
@@ -2120,7 +2122,7 @@ void coupled_slabs::compute_coefficients(double pitch)
 		// Then check that you can integrate the mode profiles over an appropriate range
 		// Then test calculation of C and K
 
-		bool c3 = pitch > 0.5*(WA + WB) ? true : false; 
+		bool c3 = pitch > min_pitch ? true : false;
 
 		if (c3 && wg_defined) {
 
@@ -2135,6 +2137,7 @@ void coupled_slabs::compute_coefficients(double pitch)
 			double KAB = integrate_KAB(pitch, loud);
 			double KBA = integrate_KBA(pitch, loud);
 
+			// Need a benchmark to check if these are being computed correctly
 			std::cout << "Computed Coefficients\n"; 
 			std::cout << "C_{aa} = " << CAA << "\n"; 
 			std::cout << "C_{bb} = " << CBB << "\n"; 
@@ -2143,12 +2146,17 @@ void coupled_slabs::compute_coefficients(double pitch)
 			std::cout << "K_{bb} = " << KBB << "\n";
 			std::cout << "K_{ab} = " << KAB << "\n";
 			std::cout << "K_{ba} = " << KBA << "\n\n";
+			std::cout << "g_{aa} = " << WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KAB) / (1.0 - (CAB * CAB))) << "\n"; 
+			std::cout << "k_{ba} = " << (KBA - CAB * KBB) / ( 1.0 - (CAB*CAB) ) << "\n"; 
+			std::cout << "k_{ab} = " << (KAB - CAB * KAA) / ( 1.0 - (CAB*CAB) ) << "\n"; 
+			std::cout << "g_{bb} = " << WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KBA) / (1.0 - (CAB * CAB))) << "\n";
 
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::compute_coefficients(double pitch)\n";
 			if (!wg_defined) reason += "WG parameters are not defined\n"; 
 			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+			if (!c3) reason += "min pitch = " + template_funcs::toString(min_pitch, 3) + "\n";
 			
 			throw std::invalid_argument(reason);
 		}
@@ -2165,7 +2173,7 @@ void coupled_slabs::output_modes(double pitch)
 	
 	try {
 
-		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+		bool c3 = pitch > min_pitch ? true : false;
 
 		if (c3 && wg_defined) {
 			int N = 501; 
@@ -2193,6 +2201,7 @@ void coupled_slabs::output_modes(double pitch)
 			std::string reason = "Error: void coupled_slabs::output_modes(double pitch)\n";
 			if (!wg_defined) reason += "WG parameters are not defined\n";
 			if (!c3) reason += "WG pitch = " + template_funcs::toString(pitch, 3) + " is too small\n";
+			if (!c3) reason += "min pitch = " + template_funcs::toString(min_pitch, 3) + "\n";
 
 			throw std::invalid_argument(reason);
 		}
@@ -2503,6 +2512,7 @@ double coupled_slabs::integrate_CBB(double pitch, bool loud)
 double coupled_slabs::integrate_CAB(double pitch, bool loud)
 {
 	// compute the overlap integral of E_{ay} E_{by}
+	// This corresponds to constant C in the notes
 
 	try {
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;		

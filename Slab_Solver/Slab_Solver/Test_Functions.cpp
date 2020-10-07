@@ -131,6 +131,7 @@ void testing::coupled_slab_wg_calc()
 	// Compute the coupling coefficient for a pair of identical slab waveguides
 	// R. Sheehan 1 - 10 - 2018
 
+	// W: waveguide width, D: waveguide pitch, WL: wavelength, Nc: core RI, Ns: substrate RI
 	double W, D, WL, Nc, Ns;
 
 	// Code produces answer that matches with Okamoto example values
@@ -141,13 +142,14 @@ void testing::coupled_slab_wg_calc()
 
 	// Si wire of height H = 0.22 um has neff^{TE} = 2.81 along vertical for nc = 3.45, ns = 1.45 and ncl = 1.0 at l = 1.55
 	// Coupling coefficient between two Si wires of width W = 450 nm, D = 300 nm is kappa = 2.4 um^{-1}, L_{c} = 653 nm
-	//W = 0.45; D = 0.3; WL = 1.55; Nc = 2.81; Ns = 1.0;
+	// Calculation is correct when TE polarisation is assumed in slab
+	W = 0.45; D = 0.3; WL = 1.55; Nc = 2.81; Ns = 1.0;
 
 	double kappa;
 
 	//W = 4.0; WL = 6.09996577; Nc = 3.377661931; Ns = 3.148794556;
 
-	W = 2; WL = 1.535; Nc = 1.63701; Ns = 1;
+	//W = 2; WL = 1.535; Nc = 1.63701; Ns = 1;
 	//W = 1.0; WL = 1.535; Nc = 1.475254387; Ns = 1;
 
 	coupled_slab_tl_neff sl_obj;
@@ -156,7 +158,7 @@ void testing::coupled_slab_wg_calc()
 
 	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
 
-	D = 0.5; 
+	D = 0.3; 
 
 	for (int i = 0; i < 6; i++) {
 
@@ -164,7 +166,7 @@ void testing::coupled_slab_wg_calc()
 
 		kappa = sl_obj.compute_coupling_coeff(TM);
 
-		std::cout << "Separation = " << D << " um\n";
+		std::cout << "Separation = " << D << " um\n"; // Is separation the same as pitch? No
 
 		std::cout << "Coupling coefficient = " << kappa << " um^{-1}\n";
 
@@ -174,7 +176,7 @@ void testing::coupled_slab_wg_calc()
 
 		write << std::setprecision(10) << D << " , " << kappa << "\n"; 
 
-		D += 1.0; 
+		D += 0.1; 
 
 	}
 
@@ -186,7 +188,12 @@ void testing::coupled_slab()
 	// test the operation of the coupled slab calculator
 	// R. Sheehan 4 - 9 - 2020
 
-	double Wa = 1.5, Wb = 2.0, l = 1.55, ncorea = 3.38, ncoreb = 3.4, nsub = 3.17, pitch = 1.85; 
+	// Si wire of height H = 0.22 um has neff^{TE} = 2.81 along vertical for nc = 3.45, ns = 1.45 and ncl = 1.0 at l = 1.55
+	// Coupling coefficient between two Si wires of width W = 450 nm, D = 300 nm is kappa = 2.4 um^{-1}, L_{c} = 653 nm
+	// Calculation is correct when TE polarisation is assumed in slab
+	double Wa = 0.45, Wb = 0.45, l = 1.55, ncorea = 2.81, ncoreb = 2.81, nsub = 1.0, pitch = 0.75; 
+
+	//double Wa = 1.5, Wb = 2.0, l = 1.55, ncorea = 3.38, ncoreb = 3.4, nsub = 3.17, pitch = 1.85;
 
 	coupled_slabs wg_pair; 
 

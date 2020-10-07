@@ -259,9 +259,9 @@ public:
 	double compute_coupling_coeff(bool mode); 
 
 private:
-	double slab_sep; 
-	double coupling_coeff; 
-	double L_coupling; 
+	double slab_sep; // separation of the slab waveguides != pitch
+	double coupling_coeff; // coupling coefficient kappa
+	double L_coupling; // coupling length
 };
 
 // class for computing the coupling coefficients of non-identical coupled slab waveguides
@@ -306,6 +306,7 @@ private:
 	double n_sub; // RI in shared substrate
 	double de_A; // constant \Delta\epsilon_{a}
 	double de_B; // constant \Delta\epsilon_{b}
+	double min_pitch; // minimum waveguide pitch
 
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 
