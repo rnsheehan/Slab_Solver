@@ -2127,18 +2127,18 @@ void coupled_slabs::compute_coefficients(double pitch)
 		if (c3 && wg_defined) {
 
 			bool loud = false; 
+			bool scale = false; 
 
-			double CAA = integrate_CAA(pitch, loud); 
-			double CBB = integrate_CBB(pitch, loud);
-			double CAB = integrate_CAB(pitch, loud);
+			double CAA = integrate_CAA(pitch, scale, loud); 
+			double CBB = integrate_CBB(pitch, scale, loud);
+			double CAB = integrate_CAB(pitch, scale, loud);
 			
-			double KAA = integrate_KAA(pitch, loud);
-			double KBB = integrate_KBB(pitch, loud);
-			double KAB = integrate_KAB(pitch, loud);
-			double KBA = integrate_KBA(pitch, loud);
+			double KAA = integrate_KAA(pitch, scale, loud);
+			double KBB = integrate_KBB(pitch, scale, loud);
+			double KAB = integrate_KAB(pitch, scale, loud);
+			double KBA = integrate_KBA(pitch, scale, loud);
 
-			// Need a benchmark to check if these are being computed correctly
-			std::cout << "Computed Coefficients\n"; 
+			std::cout << "Computed Coefficients (No scaling)\n"; 
 			std::cout << "C_{aa} = " << CAA << "\n"; 
 			std::cout << "C_{bb} = " << CBB << "\n"; 
 			std::cout << "C_{ab} = " << CAB << "\n\n";
@@ -2146,11 +2146,38 @@ void coupled_slabs::compute_coefficients(double pitch)
 			std::cout << "K_{bb} = " << KBB << "\n";
 			std::cout << "K_{ab} = " << KAB << "\n";
 			std::cout << "K_{ba} = " << KBA << "\n\n";
-			std::cout << "g_{aa} = " << WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KAB) / (1.0 - (CAB * CAB))) << "\n"; 
-			std::cout << "k_{ba} = " << (KBA - CAB * KBB) / ( 1.0 - (CAB*CAB) ) << "\n"; 
-			std::cout << "k_{ab} = " << (KAB - CAB * KAA) / ( 1.0 - (CAB*CAB) ) << "\n"; 
-			std::cout << "g_{bb} = " << WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KBA) / (1.0 - (CAB * CAB))) << "\n";
+			std::cout << "g_{aa} = " << WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB))) << "\n"; 
+			std::cout << "k_{ba} = " << (KBA - CAB * KAA) / ( 1.0 - (CAB*CAB) ) << "\n"; 
+			std::cout << "k_{ab} = " << (KAB - CAB * KBB) / ( 1.0 - (CAB*CAB) ) << "\n"; 
+			std::cout << "g_{bb} = " << WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))) << "\n";
+			std::cout << "k_{ab} - k_{ba} = " << ((KBA - CAB * KAA) / (1.0 - (CAB * CAB))) - ((KAB - CAB * KBB) / (1.0 - (CAB * CAB))) << "\n";
+			std::cout << "(g_{aa} - g_{bb}) C = " << ((WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB)))) - (WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))))) * CAB << "\n\n";
 
+			// Compute the coefficients with scaling
+			scale = true; 
+			CAA = integrate_CAA(pitch, scale, loud);
+			CBB = integrate_CBB(pitch, scale, loud);
+			CAB = integrate_CAB(pitch, scale, loud);
+
+			KAA = integrate_KAA(pitch, scale, loud);
+			KBB = integrate_KBB(pitch, scale, loud);
+			KAB = integrate_KAB(pitch, scale, loud);
+			KBA = integrate_KBA(pitch, scale, loud);
+
+			std::cout << "Computed Coefficients (With scaling)\n";
+			std::cout << "C_{aa} = " << CAA << "\n";
+			std::cout << "C_{bb} = " << CBB << "\n";
+			std::cout << "C_{ab} = " << CAB << "\n\n";
+			std::cout << "K_{aa} = " << KAA << "\n";
+			std::cout << "K_{bb} = " << KBB << "\n";
+			std::cout << "K_{ab} = " << KAB << "\n";
+			std::cout << "K_{ba} = " << KBA << "\n\n";
+			std::cout << "g_{aa} = " << WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB))) << "\n";
+			std::cout << "k_{ba} = " << (KBA - CAB * KAA) / (1.0 - (CAB * CAB)) << "\n";
+			std::cout << "k_{ab} = " << (KAB - CAB * KBB) / (1.0 - (CAB * CAB)) << "\n";
+			std::cout << "g_{bb} = " << WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))) << "\n";
+			std::cout << "k_{ab} - k_{ba} = " << ((KBA - CAB * KAA) / (1.0 - (CAB * CAB))) - ((KAB - CAB * KBB) / (1.0 - (CAB * CAB))) << "\n";
+			std::cout << "(g_{aa} - g_{bb}) C = " << ((WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB)))) - (WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))))) * CAB << "\n\n";
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::compute_coefficients(double pitch)\n";
@@ -2354,7 +2381,7 @@ void coupled_slabs::output_modes(double pitch)
 //	}
 //}
 
-double coupled_slabs::integrate_CAA(double pitch, bool loud)
+double coupled_slabs::integrate_CAA(double pitch, bool scale, bool loud)
 {
 	// compute the overlap integral of E_{ay} E_{ay}
 	
@@ -2410,7 +2437,7 @@ double coupled_slabs::integrate_CAA(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= ( WGA.get_neff(0, pol) * wavenum ) / cw2; 
+			if(scale) integral *= ( WGA.get_neff(0, pol) * wavenum ) / cw2; 
 
 			return integral;
 		}
@@ -2431,7 +2458,7 @@ double coupled_slabs::integrate_CAA(double pitch, bool loud)
 	}
 }
 
-double coupled_slabs::integrate_CBB(double pitch, bool loud)
+double coupled_slabs::integrate_CBB(double pitch, bool scale, bool loud)
 {
 	// compute the overlap integral of E_{by} E_{by}
 
@@ -2488,7 +2515,7 @@ double coupled_slabs::integrate_CBB(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= (WGB.get_neff(0, pol) * wavenum) / cw2;
+			if(scale) integral *= (WGB.get_neff(0, pol) * wavenum) / cw2;
 
 			return integral;
 		}
@@ -2509,7 +2536,7 @@ double coupled_slabs::integrate_CBB(double pitch, bool loud)
 	}
 }
 
-double coupled_slabs::integrate_CAB(double pitch, bool loud)
+double coupled_slabs::integrate_CAB(double pitch, bool scale, bool loud)
 {
 	// compute the overlap integral of E_{ay} E_{by}
 	// This corresponds to constant C in the notes
@@ -2567,7 +2594,7 @@ double coupled_slabs::integrate_CAB(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= ( 0.5 * ( WGA.get_neff(0, pol) + WGB.get_neff(0, pol) ) * wavenum) / cw2;
+			if(scale) integral *= ( 0.5 * ( WGA.get_neff(0, pol) + WGB.get_neff(0, pol) ) * wavenum) / cw2;
 
 			return integral;
 		}
@@ -2588,7 +2615,7 @@ double coupled_slabs::integrate_CAB(double pitch, bool loud)
 	}
 }
 
-double coupled_slabs::integrate_KAA(double pitch, bool loud)
+double coupled_slabs::integrate_KAA(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{ay} E_{ay}
 
@@ -2642,7 +2669,7 @@ double coupled_slabs::integrate_KAA(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= de_A; // multiply \Delta\epsilon_{a}
+			if(scale) integral *= de_A; // multiply \Delta\epsilon_{a}
 
 			return integral;
 		}
@@ -2663,7 +2690,7 @@ double coupled_slabs::integrate_KAA(double pitch, bool loud)
 	}
 }
 
-double coupled_slabs::integrate_KBB(double pitch, bool loud)
+double coupled_slabs::integrate_KBB(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{by} E_{by}
 
@@ -2717,7 +2744,7 @@ double coupled_slabs::integrate_KBB(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= de_B; // multiply \Delta\epsilon_{b}
+			if(scale) integral *= de_B; // multiply \Delta\epsilon_{b}
 
 			return integral;
 		}
@@ -2738,7 +2765,7 @@ double coupled_slabs::integrate_KBB(double pitch, bool loud)
 	}
 }
 
-double coupled_slabs::integrate_KAB(double pitch, bool loud)
+double coupled_slabs::integrate_KAB(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{ay} E_{by}
 
@@ -2795,7 +2822,7 @@ double coupled_slabs::integrate_KAB(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= de_B; // multiply \Delta\epsilon_{b}
+			if(scale) integral *= de_B; // multiply \Delta\epsilon_{b}
 
 			return integral;
 		}
@@ -2816,7 +2843,7 @@ double coupled_slabs::integrate_KAB(double pitch, bool loud)
 	}
 }
 
-double coupled_slabs::integrate_KBA(double pitch, bool loud)
+double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{ay} E_{by}
 
@@ -2873,7 +2900,7 @@ double coupled_slabs::integrate_KBA(double pitch, bool loud)
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
-			integral *= de_A; // multiply \Delta\epsilon_{a}
+			if(scale) integral *= de_A; // multiply \Delta\epsilon_{a}
 
 			return integral;
 		}
