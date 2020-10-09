@@ -215,3 +215,33 @@ void testing::coupled_slab()
 
 	wg_pair.compute_coefficients(pitch); 
 }
+
+void testing::coupled_slab_benchmark()
+{
+	// Benchmark test for the coupled slab class
+	// Calculation is based on data from the paper
+	// S-L. Chuang, ``Application of the strongly coupled-mode theory to integrated optical devices'', IEEE J. Quant. Electron., 23 (5), 1987
+	// It involves the calculation of the overlap integrals and coupling coefficients for two strongly-coupled Ti LiNbO3 waveguides separated by
+	// fixed distance, the RI in each waveguide is variable
+	// R. Sheehan 9 - 10 - 2020
+
+	// Test Problem from Chuang
+	// Strong coupling between pair of coupled Ti-diffused LiNbO3 WG
+	// C = 0.168, kab = kba ~ 0.0027 for pitch = 3.9 um
+	double Wa = 2.0, Wb = 2.0, l = 1.06, ncorea = 2.2, ncoreb = 2.2, nsub = 2.19, pitch = 3.9;
+
+	double dn = +0.0;
+	ncorea += 0.5 * dn; ncoreb -= 0.5 * dn;
+
+	std::cout << "Domains\n";
+	std::cout << "-a <= x <= +a: " << -0.5 * Wa << " <= x <= " << 0.5 * Wa << "\n";
+	std::cout << "D-b <= x <= D+b: " << pitch - 0.5 * Wb << " <= x <= " << pitch + 0.5 * Wb << "\n\n";
+
+	coupled_slabs wg_pair;
+
+	wg_pair.set_params(Wa, Wb, l, ncorea, ncoreb, nsub);
+
+	wg_pair.output_modes(pitch);
+
+	wg_pair.compute_coefficients(pitch);
+}

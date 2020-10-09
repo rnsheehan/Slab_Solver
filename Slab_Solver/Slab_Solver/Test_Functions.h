@@ -18,6 +18,8 @@ namespace testing {
 
 	void coupled_slab(); 
 
+	void coupled_slab_benchmark();
+
 }
 
 #endif
