@@ -33,6 +33,57 @@ namespace template_funcs{
 		return ((b)>(T)(0)?fabs(a):-fabs(a));
 	}
 
+	template <class T> T Pythag(T a, T b)
+	{
+		// Computes (a^2+b^2)^{1/2} without over / underflow
+
+		T absa, absb;
+		absa = abs(a);
+		absb = abs(b);
+		if (absa > absb) {
+			return absa * sqrt((T)(1) + DSQR(absb / absa));
+		}
+		else {
+			return (absb == (T)(0) ? (T)(0) : absb * sqrt((T)(1) + DSQR(absa / absb)));
+		}
+	}
+
+	template <class T> T SQR_DIFF(T a, T b)
+	{
+		// Computes (a^2 - b^2) 
+
+		return ( DSQR(a) - DSQR(b) ); 
+	}
+
+	template <class T> void Quad_Solve(T a, T b, T c, T& rt1, T& rt2)
+	{
+		// Solve the quadratic equation a x^{2} + b x + c = 0
+
+		T q;
+
+		q = -0.5 * (b + Signum(b) * sqrt((DSQR(b) - 4.0 * a * c)));
+
+		rt1 = (q / a);
+
+		rt2 = (c / q);
+	}
+
+	template <class T> void SWAP(T& a, T& b)
+	{
+		// Updated version of SWAP Macro
+
+		T itemp = (a);
+		(a) = (b);
+		(b) = itemp;
+	}
+
+	template <class T> void SHFT(T& a, T& b, T& c, T& d)
+	{
+		// Updated version of SHFT Macro
+
+		(a) = (b); (b) = (c); (c) = (d);
+	}
+
 	template <class T> std::string toString(const T & t)
 	{
 		// This is just too convenient not to use

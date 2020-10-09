@@ -2079,9 +2079,11 @@ void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore
 			
 			cw2 = 2.0 * omega * MU; // constant required in calculation
 			
-			de_A = ( cw1 * ( template_funcs::DSQR(n_core_B) - template_funcs::DSQR(n_sub) ) ) ;
+			//de_A = ( cw1 * ( template_funcs::DSQR(n_core_B) - template_funcs::DSQR(n_sub) ) ) ;
+			de_A = ( cw1 * template_funcs::SQR_DIFF(n_core_B, n_sub) ) ;
 
-			de_B = ( cw1 * ( template_funcs::DSQR(n_core_A) - template_funcs::DSQR(n_sub) ) ) ;
+			//de_B = ( cw1 * ( template_funcs::DSQR(n_core_A) - template_funcs::DSQR(n_sub) ) ) ;
+			de_B = ( cw1 * template_funcs::SQR_DIFF(n_core_A, n_sub) ) ;
 
 			WGA.set_params(W1, lambda, ncore1, nsub, nsub); // assign the parameters to the slab object
 			
@@ -2122,62 +2124,67 @@ void coupled_slabs::compute_coefficients(double pitch)
 		// Then check that you can integrate the mode profiles over an appropriate range
 		// Then test calculation of C and K
 
-		bool c3 = pitch > min_pitch ? true : false;
+		//bool c3 = pitch > min_pitch ? true : false;
+
+		bool c3 = true; 
 
 		if (c3 && wg_defined) {
 
 			bool loud = false; 
-			bool scale = false; 
+			bool scale = true; 
 
 			double CAA = integrate_CAA(pitch, scale, loud); 
 			double CBB = integrate_CBB(pitch, scale, loud);
 			double CAB = integrate_CAB(pitch, scale, loud);
+			double norm = CAA + CBB; 
+			CAB /= norm; 
 			
 			double KAA = integrate_KAA(pitch, scale, loud);
 			double KBB = integrate_KBB(pitch, scale, loud);
 			double KAB = integrate_KAB(pitch, scale, loud);
 			double KBA = integrate_KBA(pitch, scale, loud);
 
-			std::cout << "Computed Coefficients (No scaling)\n"; 
+			KAA /= norm; KBB /= norm; KAB /= norm; KBA /= norm; 
+
+			double bA, bB, numer; 
+			numer = 1.0 - template_funcs::DSQR(CAB); 
+			bA = WGA.get_neff(0, pol) * wavenum; 
+			bB = WGB.get_neff(0, pol) * wavenum; 
+
+			double ga, gb, kab, kba; 
+			ga = bA + ((KAA - CAB * KBA) / numer); 
+			gb = bB + ((KBB - CAB * KAB) / numer); 
+			kab = ((KAB - CAB * KBB) / numer); 
+			kba = ((KBA - CAB * KAA) / numer); 
+
+			std::cout << "Computed Coefficients\n"; 
+			std::cout << "Overlap Integrals\n"; 
 			std::cout << "C_{aa} = " << CAA << "\n"; 
 			std::cout << "C_{bb} = " << CBB << "\n"; 
 			std::cout << "C_{ab} = " << CAB << "\n\n";
+			//std::cout << "C / (C_{aa} + C_{bb}) = " << CAB / norm << "\n\n";
+			
+			std::cout << "Coupling Coefficients\n";
 			std::cout << "K_{aa} = " << KAA << "\n";
 			std::cout << "K_{bb} = " << KBB << "\n";
 			std::cout << "K_{ab} = " << KAB << "\n";
 			std::cout << "K_{ba} = " << KBA << "\n\n";
-			std::cout << "g_{aa} = " << WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB))) << "\n"; 
-			std::cout << "k_{ba} = " << (KBA - CAB * KAA) / ( 1.0 - (CAB*CAB) ) << "\n"; 
-			std::cout << "k_{ab} = " << (KAB - CAB * KBB) / ( 1.0 - (CAB*CAB) ) << "\n"; 
-			std::cout << "g_{bb} = " << WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))) << "\n";
-			std::cout << "k_{ab} - k_{ba} = " << ((KBA - CAB * KAA) / (1.0 - (CAB * CAB))) - ((KAB - CAB * KBB) / (1.0 - (CAB * CAB))) << "\n";
-			std::cout << "(g_{aa} - g_{bb}) C = " << ((WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB)))) - (WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))))) * CAB << "\n\n";
 
-			// Compute the coefficients with scaling
-			scale = true; 
-			CAA = integrate_CAA(pitch, scale, loud);
-			CBB = integrate_CBB(pitch, scale, loud);
-			CAB = integrate_CAB(pitch, scale, loud);
+			std::cout << "Overlap-integral-coupling-coefficient relation\n"; 
+			std::cout << "(beta_{b} - beta_{a}) C = " << ( bB - bA )* CAB  << "\n";
+			std::cout << "K_{ba} - K_{ab} = " << KBA - KAB << "\n\n";
 
-			KAA = integrate_KAA(pitch, scale, loud);
-			KBB = integrate_KBB(pitch, scale, loud);
-			KAB = integrate_KAB(pitch, scale, loud);
-			KBA = integrate_KBA(pitch, scale, loud);
+			std::cout << "Propagation Matrix Elements\n"; 
+			std::cout << "g_{a} = " << ga << "\n"; 
+			std::cout << "g_{b} = " << gb << "\n"; 
+			std::cout << "k_{ab} = " << kab << "\n"; 
+			std::cout << "k_{ba} = " << kba << "\n\n"; 
 
-			std::cout << "Computed Coefficients (With scaling)\n";
-			std::cout << "C_{aa} = " << CAA << "\n";
-			std::cout << "C_{bb} = " << CBB << "\n";
-			std::cout << "C_{ab} = " << CAB << "\n\n";
-			std::cout << "K_{aa} = " << KAA << "\n";
-			std::cout << "K_{bb} = " << KBB << "\n";
-			std::cout << "K_{ab} = " << KAB << "\n";
-			std::cout << "K_{ba} = " << KBA << "\n\n";
-			std::cout << "g_{aa} = " << WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB))) << "\n";
-			std::cout << "k_{ba} = " << (KBA - CAB * KAA) / (1.0 - (CAB * CAB)) << "\n";
-			std::cout << "k_{ab} = " << (KAB - CAB * KBB) / (1.0 - (CAB * CAB)) << "\n";
-			std::cout << "g_{bb} = " << WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))) << "\n";
-			std::cout << "k_{ab} - k_{ba} = " << ((KBA - CAB * KAA) / (1.0 - (CAB * CAB))) - ((KAB - CAB * KBB) / (1.0 - (CAB * CAB))) << "\n";
-			std::cout << "(g_{aa} - g_{bb}) C = " << ((WGA.get_neff(0, pol) * wavenum + ((KAA - CAB * KBA) / (1.0 - (CAB * CAB)))) - (WGB.get_neff(0, pol) * wavenum + ((KBB - CAB * KAB) / (1.0 - (CAB * CAB))))) * CAB << "\n\n";
+			std::cout << "Propagation Matrix Element Relation\n";
+			std::cout << "k_{ab} - k_{ba} = " << kab - kba << "\n"; 
+			std::cout << "(g_{a} - g_{b}) C = " << (ga - gb) * CAB << "\n";
+			std::cout << "| (k_{ab} - k_{ba}) - (g_{a} - g_{b}) C | = " << fabs(kab - kba) - fabs((ga - gb) * CAB) << "\n\n";
+			
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::compute_coefficients(double pitch)\n";
@@ -2387,8 +2394,10 @@ double coupled_slabs::integrate_CAA(double pitch, bool scale, bool loud)
 	
 	try {
 		//bool c1 = fabs(x2 - x1) > EPS ? true : false;
-		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+		//bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
 		//bool c10 = c1 && c3;
+
+		bool c3 = true; 
 
 		if (c3 && wg_defined) {
 			int N = 501;
@@ -2464,8 +2473,10 @@ double coupled_slabs::integrate_CBB(double pitch, bool scale, bool loud)
 
 	try {
 		//bool c1 = fabs(x2 - x1) > EPS ? true : false;
-		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+		//bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
 		//bool c10 = c1 && c3;
+
+		bool c3 = true; 
 
 		if (c3 && wg_defined) {
 			int N = 501;
@@ -2542,7 +2553,9 @@ double coupled_slabs::integrate_CAB(double pitch, bool scale, bool loud)
 	// This corresponds to constant C in the notes
 
 	try {
-		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;		
+		//bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
+
+		bool c3 = true; 
 
 		if (c3 && wg_defined) {
 			int N = 501;
@@ -2592,9 +2605,11 @@ double coupled_slabs::integrate_CAB(double pitch, bool scale, bool loud)
 			// compute last term in the sum
 			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
 
-			integral = 0.5 * dx * (first + last + 2.0 * sum);
+			integral = 0.5 * dx * (first + last + 2.0 * sum); 
 
-			if(scale) integral *= ( 0.5 * ( WGA.get_neff(0, pol) + WGB.get_neff(0, pol) ) * wavenum) / cw2;
+			if(scale) integral *= ( 0.5 * ( WGA.get_neff(0, pol) + WGB.get_neff(0, pol) ) * wavenum) / cw2; 
+
+			integral *= 2.0; 
 
 			return integral;
 		}
@@ -2618,6 +2633,7 @@ double coupled_slabs::integrate_CAB(double pitch, bool scale, bool loud)
 double coupled_slabs::integrate_KAA(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{ay} E_{ay}
+	// range of integration is D-b <= x <= D+b
 
 	try {
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
@@ -2671,6 +2687,8 @@ double coupled_slabs::integrate_KAA(double pitch, bool scale, bool loud)
 
 			if(scale) integral *= de_A; // multiply \Delta\epsilon_{a}
 
+			integral *= 2.0;
+
 			return integral;
 		}
 		else {
@@ -2693,6 +2711,7 @@ double coupled_slabs::integrate_KAA(double pitch, bool scale, bool loud)
 double coupled_slabs::integrate_KBB(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{by} E_{by}
+	// range of integration is -a <= x <= +a
 
 	try {
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
@@ -2701,8 +2720,8 @@ double coupled_slabs::integrate_KBB(double pitch, bool scale, bool loud)
 			int N = 501;
 			double Lx = 2.5 * (WA + pitch + WB); // total length of simulation region
 			double dx = Lx / (N - 1);
-			double x0 = -0.5*WA - pitch; // start computing solutions here
-			double xend = 0.5*WA - pitch; // stop computing solutions here
+			double x0 = -0.5*WA; // start computing solutions here
+			double xend = 0.5*WA; // stop computing solutions here
 			double first, last, term, integral, sum = 0.0;
 
 			std::string filename = "integrate_KBB_field_values.txt";
@@ -2724,10 +2743,10 @@ double coupled_slabs::integrate_KBB(double pitch, bool scale, bool loud)
 			while(x0 < xend) {
 
 				if (loud) {
-					write << std::setprecision(10) << x0 << " , " << WGB.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0, 0, pol) << "\n";
+					write << std::setprecision(10) << x0 << " , " << WGB.TE_TM(x0-pitch, 0, pol) << " , " << WGB.TE_TM(x0 - pitch, 0, pol) << "\n";
 				}
 
-				term = template_funcs::DSQR(WGB.TE_TM(x0, 0, pol));
+				term = template_funcs::DSQR(WGB.TE_TM(x0 - pitch, 0, pol));
 
 				sum += term;
 
@@ -2745,6 +2764,8 @@ double coupled_slabs::integrate_KBB(double pitch, bool scale, bool loud)
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
 			if(scale) integral *= de_B; // multiply \Delta\epsilon_{b}
+
+			integral *= 2.0;
 
 			return integral;
 		}
@@ -2768,6 +2789,7 @@ double coupled_slabs::integrate_KBB(double pitch, bool scale, bool loud)
 double coupled_slabs::integrate_KAB(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{ay} E_{by}
+	// range of integration is -a <= x <= +a
 
 	try {
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
@@ -2791,7 +2813,7 @@ double coupled_slabs::integrate_KAB(double pitch, bool scale, bool loud)
 			// Evaluate the integral using the trapezoidal rule
 
 			// compute first term in the sum
-			first = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+			first = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(x0 - pitch, 0, pol));
 
 			// update position
 			x0 += dx;
@@ -2801,10 +2823,10 @@ double coupled_slabs::integrate_KAB(double pitch, bool scale, bool loud)
 			while(x0 < xend) {
 
 				if (loud) {
-					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(xoff, 0, pol) << "\n";
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0-pitch, 0, pol) << "\n";
 				}
 
-				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(x0 - pitch, 0, pol));
 
 				sum += term;
 
@@ -2818,11 +2840,13 @@ double coupled_slabs::integrate_KAB(double pitch, bool scale, bool loud)
 			}
 
 			// compute last term in the sum
-			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(x0 - pitch, 0, pol));
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
 			if(scale) integral *= de_B; // multiply \Delta\epsilon_{b}
+
+			integral *= 2.0;
 
 			return integral;
 		}
@@ -2846,6 +2870,7 @@ double coupled_slabs::integrate_KAB(double pitch, bool scale, bool loud)
 double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 {
 	// compute the coupling integral of E_{ay} E_{by}
+	// range of integration is D-b <= x <= D+b
 
 	try {
 		bool c3 = pitch > 0.5 * (WA + WB) ? true : false;
@@ -2869,7 +2894,7 @@ double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 			// Evaluate the integral using the trapezoidal rule
 
 			// compute first term in the sum
-			first = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+			first = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(x0 - pitch, 0, pol));
 
 			// update position
 			x0 += dx;
@@ -2879,10 +2904,10 @@ double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 			while (x0 < xend) {
 
 				if (loud) {
-					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(xoff, 0, pol) << "\n";
+					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0 - pitch, 0, pol) << "\n";
 				}
 
-				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+				term = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(x0 - pitch, 0, pol));
 
 				sum += term;
 
@@ -2896,11 +2921,13 @@ double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 			}
 
 			// compute last term in the sum
-			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(xoff, 0, pol));
+			last = (WGA.TE_TM(x0, 0, pol) * WGB.TE_TM(x0 - pitch, 0, pol));
 
 			integral = 0.5 * dx * (first + last + 2.0 * sum);
 
 			if(scale) integral *= de_A; // multiply \Delta\epsilon_{a}
+
+			integral *= 2.0;
 
 			return integral;
 		}
