@@ -28,11 +28,11 @@ def mode_plot():
 
     try:
         #filename = "TE_Mode_Profiles.txt"
-        #filename = "Coupled_Mode_Profiles.txt"
+        filename = "Coupled_Mode_Profiles.txt"
         #filename = "integrate_KAA_field_values.txt"
         #filename = "integrate_KBB_field_values.txt"
         #filename = "integrate_KAB_field_values.txt"
-        filename = "integrate_KBA_field_values.txt"
+        #filename = "integrate_KBA_field_values.txt"
             
         if glob.glob(filename):
             # import the dataset
@@ -42,7 +42,9 @@ def mode_plot():
                 # multi-curve plot required
                 hv_data = []; labels = []; marks = [];
                 for i in range(1, len(data), 1):
-                    hv_data.append([data[0], data[i]]); labels.append('M$_{%(v1)d}$'%{"v1":i}); marks.append(Plotting.labs_lins[(i-1)%len(Plotting.labs_lins)]); 
+                    hv_data.append([data[0], data[i]]); 
+                    labels.append('M$_{%(v1)d}$'%{"v1":i}); 
+                    marks.append(Plotting.labs_lins[(i-1)%len(Plotting.labs_lins)]); 
            
                 # make the plot of the data set
                 args = Plotting.plot_arg_multiple()
@@ -109,6 +111,68 @@ def disp_eqn_plot():
     except Exception as e:
         print(ERR_STATEMENT)
         print(e)
+        
+def chuang_plots():
+    # make plots for the computed data from the Chuang benchmark calculation
+    # R. Sheehan 16 - 10 - 2020
+    
+    FUNC_NAME = ".chuang_plots()" # use this in exception handling messages
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+    
+    try:
+        filename = "Chuang_Benchmark.txt"
+        
+        if glob.glob(filename):
+            # import the dataset
+            data = np.loadtxt(filename, delimiter = ',', unpack = True)
+            
+            # plot the overlap integral versus RI difference
+            args = Plotting.plot_arg_single()
+            
+            args.loud = True
+            #args.curve_label = '$\beta$'
+            args.marker = Plotting.labs_pts[0]
+            args.x_label = 'RI Difference $\Delta n$'
+            args.y_label = 'Overlap Integral $C_{AB}$'
+            args.fig_name = filename.replace('.txt','') + '_OL'
+            
+            Plotting.plot_single_curve(data[0], data[1], args)
+            
+            # plot the asynchronism versus RI difference
+            args.loud = True
+            #args.curve_label = '$\beta$'
+            args.marker = Plotting.labs_pts[1]
+            args.x_label = 'RI Difference $\Delta n$'
+            args.y_label = 'Asynchronism'
+            args.fig_name = filename.replace('.txt','') + '_Async'
+            
+            Plotting.plot_single_curve(data[0], data[4], args)
+            
+            # multi-curve plot required
+            hv_data = []; labels = []; marks = [];
+            
+            hv_data.append([data[0], data[2]]); labels.append('$k_{ab}$'); marks.append(Plotting.labs_pts[2]); 
+            hv_data.append([data[0], data[3]]); labels.append('$k_{ba}$'); marks.append(Plotting.labs_pts[3]); 
+       
+            # make the plot of the data set
+            args = Plotting.plot_arg_multiple()
+
+            args.loud = True
+            args.crv_lab_list = labels
+            args.mrk_list = marks
+            args.x_label = 'RI Difference $\Delta n$'
+            args.y_label = 'Coupling Coefficients'
+            args.fig_name = filename.replace('.txt','') + '_CC'
+
+            Plotting.plot_multiple_curves(hv_data, args)
+
+            del hv_data; del labels; del marks; 
+            
+        else:
+            raise Exception
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
 
 def main():
     pass
@@ -123,3 +187,5 @@ if __name__ == '__main__':
     #disp_eqn_plot()
     
     mode_plot()
+    
+    #chuang_plots()

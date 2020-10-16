@@ -275,9 +275,15 @@ public:
 
 	void set_params(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub);
 
-	void compute_coefficients(double pitch);
+	void compute_coefficients(double pitch, bool loud = false);
 
 	void output_modes(double pitch); 
+
+	// getters
+	inline double get_CAB() { return CAB;  } // overlap integral
+	inline double get_kab() { return kab;  } // coupling coefficient
+	inline double get_kba() { return kba;  } // coupling coefficient
+	inline double get_async() { return async;  } // asynchronism
 
 private:
 	//double integrate_modes(int integrand, double x1, double x2, double pitch);
@@ -307,6 +313,11 @@ private:
 	double de_A; // constant \Delta\epsilon_{a}
 	double de_B; // constant \Delta\epsilon_{b}
 	double min_pitch; // minimum waveguide pitch
+
+	// computed parameters
+	double CAA, CBB, CAB, norm; 
+	double KAA, KBB, KAB, KBA; 
+	double ga, gb, kab, kba, async;
 
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 

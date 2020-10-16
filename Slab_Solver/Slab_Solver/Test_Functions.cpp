@@ -191,6 +191,7 @@ void testing::coupled_slab()
 	// Si wire of height H = 0.22 um has neff^{TE} = 2.81 along vertical for nc = 3.45, ns = 1.45 and ncl = 1.0 at l = 1.55
 	// Coupling coefficient between two Si wires of width W = 450 nm, D = 300 nm is kappa = 2.4 um^{-1}, L_{c} = 653 nm
 	// Calculation is correct when TE polarisation is assumed in slab
+	// Citation?
 	double Wa = 0.45, Wb = 0.45, l = 1.55, ncorea = 2.81, ncoreb = 2.81, nsub = 1.0, pitch = 0.75; 
 
 	//double Wa = 1.5, Wb = 2.0, l = 1.55, ncorea = 3.38, ncoreb = 3.4, nsub = 3.17, pitch = 1.85;
@@ -199,7 +200,6 @@ void testing::coupled_slab()
 	// Strong coupling between pair of coupled Ti-diffused LiNbO3 WG
 	// C = 0.168, kab = kba ~ 0.0027 for pitch = 3.9 um
 	/*double Wa = 2.0, Wb = 2.0, l = 1.06, ncorea = 2.2, ncoreb = 2.2, nsub = 2.19, pitch = 3.9;
-
 	double dn = +0.0;
 	ncorea += 0.5 * dn; ncoreb -= 0.5 * dn;*/
 
@@ -213,7 +213,7 @@ void testing::coupled_slab()
 
 	wg_pair.output_modes(pitch); 
 
-	wg_pair.compute_coefficients(pitch); 
+	wg_pair.compute_coefficients(pitch, true); 
 }
 
 void testing::coupled_slab_benchmark()
@@ -230,18 +230,29 @@ void testing::coupled_slab_benchmark()
 	// C = 0.168, kab = kba ~ 0.0027 for pitch = 3.9 um
 	double Wa = 2.0, Wb = 2.0, l = 1.06, ncorea = 2.2, ncoreb = 2.2, nsub = 2.19, pitch = 3.9;
 
-	double dn = +0.0;
-	ncorea += 0.5 * dn; ncoreb -= 0.5 * dn;
+	double dn_start = -0.004; 
+	double dn_stop = 0.0045; 
+	double dn = +0.0005;
 
-	std::cout << "Domains\n";
-	std::cout << "-a <= x <= +a: " << -0.5 * Wa << " <= x <= " << 0.5 * Wa << "\n";
-	std::cout << "D-b <= x <= D+b: " << pitch - 0.5 * Wb << " <= x <= " << pitch + 0.5 * Wb << "\n\n";
+	std::string filename = "Chuang_Benchmark.txt"; 
+	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
 
-	coupled_slabs wg_pair;
+	while (dn_start < dn_stop) {
+		ncorea = 2.2; 
+		ncoreb = 2.2;
+		ncorea += 0.5 * dn_start; ncoreb -= 0.5 * dn_start;
 
-	wg_pair.set_params(Wa, Wb, l, ncorea, ncoreb, nsub);
+		coupled_slabs wg_pair;
 
-	wg_pair.output_modes(pitch);
+		wg_pair.set_params(Wa, Wb, l, ncorea, ncoreb, nsub);
 
-	wg_pair.compute_coefficients(pitch);
+		wg_pair.compute_coefficients(pitch, false);
+
+		write << std::setprecision(10) << dn_start << " , " << wg_pair.get_CAB() << " , " << wg_pair.get_kab() << " , " << wg_pair.get_kba() << " , " << wg_pair.get_async() << "\n"; 
+
+		dn_start += dn; 
+	}
+
+	write.close(); 
+	
 }

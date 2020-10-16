@@ -2042,6 +2042,7 @@ coupled_slabs::coupled_slabs()
 	wg_defined = false; 
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
 	min_pitch = de_A = de_B = omega = wavenum = cw1 = cw2 = WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0;
+	CAA = CBB = CAB = norm = KAA = KBB = KAB = KBA = ga = gb = kab = kba = async = 0.0; 
 }
 
 coupled_slabs::coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
@@ -2114,7 +2115,7 @@ void coupled_slabs::set_params(double W1, double W2, double lambda, double ncore
 	}
 }
 
-void coupled_slabs::compute_coefficients(double pitch)
+void coupled_slabs::compute_coefficients(double pitch, bool loud)
 {
 	// Compute the various coupling coefficients
 
@@ -2124,67 +2125,74 @@ void coupled_slabs::compute_coefficients(double pitch)
 		// Then check that you can integrate the mode profiles over an appropriate range
 		// Then test calculation of C and K
 
-		//bool c3 = pitch > min_pitch ? true : false;
-
-		bool c3 = true; 
+		bool c3 = pitch > min_pitch ? true : false;
 
 		if (c3 && wg_defined) {
 
-			bool loud = false; 
-			bool scale = true; 
+			bool loud_integral = false; 
+			bool scale_integral = true; 
 
-			double CAA = integrate_CAA(pitch, scale, loud); 
-			double CBB = integrate_CBB(pitch, scale, loud);
-			double CAB = integrate_CAB(pitch, scale, loud);
-			double norm = CAA + CBB; 
+			// overlap integrals
+			CAA = integrate_CAA(pitch, scale_integral, loud_integral);
+			CBB = integrate_CBB(pitch, scale_integral, loud_integral);
+			CAB = integrate_CAB(pitch, scale_integral, loud_integral);
+			norm = CAA + CBB; 
 			CAB /= norm; 
 			
-			double KAA = integrate_KAA(pitch, scale, loud);
-			double KBB = integrate_KBB(pitch, scale, loud);
-			double KAB = integrate_KAB(pitch, scale, loud);
-			double KBA = integrate_KBA(pitch, scale, loud);
+			// coupling coefficients
+			KAA = integrate_KAA(pitch, scale_integral, loud_integral);
+			KBB = integrate_KBB(pitch, scale_integral, loud_integral);
+			KAB = integrate_KAB(pitch, scale_integral, loud_integral);
+			KBA = integrate_KBA(pitch, scale_integral, loud_integral);
 
 			KAA /= norm; KBB /= norm; KAB /= norm; KBA /= norm; 
 
+			// propagation matrix elements
 			double bA, bB, numer; 
 			numer = 1.0 - template_funcs::DSQR(CAB); 
 			bA = WGA.get_neff(0, pol) * wavenum; 
-			bB = WGB.get_neff(0, pol) * wavenum; 
-
-			double ga, gb, kab, kba; 
+			bB = WGB.get_neff(0, pol) * wavenum; 			
+			
 			ga = bA + ((KAA - CAB * KBA) / numer); 
 			gb = bB + ((KBB - CAB * KAB) / numer); 
 			kab = ((KAB - CAB * KBB) / numer); 
 			kba = ((KBA - CAB * KAA) / numer); 
 
-			std::cout << "Computed Coefficients\n"; 
-			std::cout << "Overlap Integrals\n"; 
-			std::cout << "C_{aa} = " << CAA << "\n"; 
-			std::cout << "C_{bb} = " << CBB << "\n"; 
-			std::cout << "C_{ab} = " << CAB << "\n\n";
-			//std::cout << "C / (C_{aa} + C_{bb}) = " << CAB / norm << "\n\n";
-			
-			std::cout << "Coupling Coefficients\n";
-			std::cout << "K_{aa} = " << KAA << "\n";
-			std::cout << "K_{bb} = " << KBB << "\n";
-			std::cout << "K_{ab} = " << KAB << "\n";
-			std::cout << "K_{ba} = " << KBA << "\n\n";
+			// asynchronism factor
+			async = (gb - ga) / (2.0 * sqrt(kab * kba)); 
 
-			std::cout << "Overlap-integral-coupling-coefficient relation\n"; 
-			std::cout << "(beta_{b} - beta_{a}) C = " << ( bB - bA )* CAB  << "\n";
-			std::cout << "K_{ba} - K_{ab} = " << KBA - KAB << "\n\n";
+			if (loud) {
+				std::cout << "Computed Coefficients\n";
+				std::cout << "Overlap Integrals\n";
+				std::cout << "C_{aa} = " << CAA << "\n";
+				std::cout << "C_{bb} = " << CBB << "\n";
+				std::cout << "C_{ab} = " << CAB << "\n\n";
+				//std::cout << "C / (C_{aa} + C_{bb}) = " << CAB / norm << "\n\n";
 
-			std::cout << "Propagation Matrix Elements\n"; 
-			std::cout << "g_{a} = " << ga << "\n"; 
-			std::cout << "g_{b} = " << gb << "\n"; 
-			std::cout << "k_{ab} = " << kab << "\n"; 
-			std::cout << "k_{ba} = " << kba << "\n\n"; 
+				std::cout << "Coupling Coefficients\n";
+				std::cout << "K_{aa} = " << KAA << "\n";
+				std::cout << "K_{bb} = " << KBB << "\n";
+				std::cout << "K_{ab} = " << KAB << "\n";
+				std::cout << "K_{ba} = " << KBA << "\n\n";
 
-			std::cout << "Propagation Matrix Element Relation\n";
-			std::cout << "k_{ab} - k_{ba} = " << kab - kba << "\n"; 
-			std::cout << "(g_{a} - g_{b}) C = " << (ga - gb) * CAB << "\n";
-			std::cout << "| (k_{ab} - k_{ba}) - (g_{a} - g_{b}) C | = " << fabs(kab - kba) - fabs((ga - gb) * CAB) << "\n\n";
-			
+				std::cout << "Overlap-integral-coupling-coefficient relation\n";
+				std::cout << "(beta_{b} - beta_{a}) C = " << (bB - bA) * CAB << "\n";
+				std::cout << "K_{ba} - K_{ab} = " << KBA - KAB << "\n\n";
+
+				std::cout << "Propagation Matrix Elements\n";
+				std::cout << "g_{a} = " << ga << "\n";
+				std::cout << "g_{b} = " << gb << "\n";
+				std::cout << "k_{ab} = " << kab << "\n";
+				std::cout << "k_{ba} = " << kba << "\n\n";
+
+				std::cout << "Propagation Matrix Element Relation\n";
+				std::cout << "k_{ab} - k_{ba} = " << kab - kba << "\n";
+				std::cout << "(g_{a} - g_{b}) C = " << (ga - gb) * CAB << "\n";
+				std::cout << "| (k_{ab} - k_{ba}) - (g_{a} - g_{b}) C | = " << fabs(kab - kba) - fabs((ga - gb) * CAB) << "\n\n";
+
+				std::cout << "Asynchronism\n";
+				std::cout << "d = " << async << "\n\n";
+			}
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::compute_coefficients(double pitch)\n";
