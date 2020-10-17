@@ -103,7 +103,7 @@ void vecut::read_into_vector(std::string &filename, std::vector<double> &data, i
 	}
 }
 
-void vecut::print_to_screen(std::vector<std::vector<double>> &matrix)
+void vecut::print_mat(std::vector<std::vector<double>> &matrix)
 {
 	// print the matrix to the screen, for practicality's sake limit the size of elements printed to 
 	// that of a 10*10
@@ -120,6 +120,46 @@ void vecut::print_to_screen(std::vector<std::vector<double>> &matrix)
 			int rows, cols; 
 			rows = std::min( 10, static_cast<int>( matrix.size() ) ); 
 			cols = std::min( 10, static_cast<int>( matrix[0].size() ) );
+
+			for (int i = 0; i < rows; i++) {
+				for (int j = 0; j < cols; j++)
+					std::cout << matrix[i][j] << " ";
+				std::cout << "\n";
+			}
+
+		}
+		else {
+			std::string reason = "Error: void vecut::print_to_screen(std::vector<std::vector<double>> &matrix)\n";
+			reason += "Matrix has not been assigned values\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+	catch (std::runtime_error& e) {
+		std::cerr << e.what();
+	}
+}
+
+void vecut::print_cmat(std::vector<std::vector<std::complex<double>>>& matrix)
+{
+	// print the matrix to the screen, for practicality's sake limit the size of elements printed to 
+	// that of a 10*10
+	// R. Sheehan 11 - 6 - 2020
+
+	try {
+		if (!matrix.empty()) {
+			/*for (size_t i = 0; i < matrix.size(); i++) {
+				for (size_t j = 0; j < matrix[0].size(); j++)
+					std::cout << matrix[i][j] << " ";
+				std::cout << "\n";
+			}*/
+
+			int rows, cols;
+			rows = std::min(10, static_cast<int>(matrix.size()));
+			cols = std::min(10, static_cast<int>(matrix[0].size()));
 
 			for (int i = 0; i < rows; i++) {
 				for (int j = 0; j < cols; j++)
@@ -387,6 +427,54 @@ std::vector<std::vector<std::complex<double>>> vecut::cmat_cmat_product(std::vec
 		}
 	}
 	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+std::vector<std::complex<double>> vecut::cmat_cvec_product(std::vector<std::vector<std::complex<double>>>& mat, std::vector<std::complex<double>>& vec)
+{
+	// Compute the product of a matrix and vector of arbitrary size
+	// matrix elements are of type std::complex<double>
+
+	try {
+		if (!mat.empty() && !vec.empty()) {
+			int rows1, cols1, vec_size;
+
+			rows1 = static_cast<int>(mat.size()); cols1 = static_cast<int>(mat[0].size());
+			vec_size = static_cast<int>(vec.size());
+
+			if (cols1 == vec_size) {
+				// matrix-vector product can be computed
+				// assign memory space to store result
+				std::vector<std::complex<double>> res(vec_size, zero);
+
+				// compute the matrix-vector product
+				for (int i = 0; i < vec_size; i++) {
+					for (int j = 0; j < cols1; j++) {
+						res[i] += mat[i][j] * vec[j]; 
+					}
+				}
+
+				return res;
+			}
+			else {
+				// matrix product cannot be computed			 
+				/*std::vector<std::vector<double>> res;
+				for (int i = 0; i < 2; i++) res.push_back(std::vector<double>(2, 0.0));
+				return res;*/
+				std::string reason = "Error: std::vector<std::complex<double>> vecut::cmat_cvec_product(std::vector<std::vector<std::complex<double>>>& mat, std::vector<std::complex<double>>& vec)\n";
+				reason += "Matrix-vector product cannot be computed\nSizes are not compatible\n";
+				throw std::invalid_argument(reason);
+			}
+		}
+		else {
+			std::string reason = "Error: std::vector<std::complex<double>> vecut::cmat_cvec_product(std::vector<std::vector<std::complex<double>>>& mat, std::vector<std::complex<double>>& vec)\n";
+			reason += "Matrices have not been assigned values\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}

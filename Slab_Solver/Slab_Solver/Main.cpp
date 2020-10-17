@@ -10,6 +10,8 @@
 int main()
 {
 
+	//testing::vec_mat_test(); 
+
 	//testing::slab_wg_mode_calc(); 
 
 	//testing::fl_slab_wg_neff_calc(); 

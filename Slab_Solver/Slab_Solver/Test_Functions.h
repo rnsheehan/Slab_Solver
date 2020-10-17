@@ -5,6 +5,8 @@
 // R. Sheehan 2 - 5 - 2018
 
 namespace testing {
+
+	void vec_mat_test();
 	
 	void slab_wg_neff_calc(); 
 

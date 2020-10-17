@@ -2,6 +2,30 @@
 #include "Attach.h"
 #endif
 
+void testing::vec_mat_test()
+{
+	// Check to ensure that the vec mat product is correct
+
+	int rs = 3, cs = 3;
+
+	std::vector<std::vector<std::complex<double>>> M; 
+	std::vector<std::complex<double>> X(rs, zero); 
+	std::vector<std::complex<double>> B(rs, zero);
+
+	M = vecut::zero_cmat(rs, cs); 
+
+	M[0][0].real(4); M[0][1].real(2); M[0][2].real(-1); 
+	M[1][0].real(0); M[1][1].real(7); M[1][2].real(5); 
+	M[2][0].real(3); M[2][1].real(-5); M[2][2].real(-6);
+
+	X[0].real(4); X[1].real(-2); X[2].real(1); 
+
+	B = vecut::cmat_cvec_product(M, X); 
+
+	for (int i = 0; i < rs; i++)
+		std::cout << B[i] << "\n"; 
+}
+
 void testing::slab_wg_neff_calc()
 {
 	// Run a three layer slab waveguide neff calculation and check the results
@@ -214,6 +238,8 @@ void testing::coupled_slab()
 	wg_pair.output_modes(pitch); 
 
 	wg_pair.compute_coefficients(pitch, true); 
+
+	wg_pair.propagate(500, 100, 0, 1, true); 
 }
 
 void testing::coupled_slab_benchmark()

@@ -2041,6 +2041,7 @@ coupled_slabs::coupled_slabs()
 	// default constructor
 	wg_defined = false; coeffs_defined = false; 
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
+	msize = 2; 
 	min_pitch = de_A = de_B = omega = wavenum = cw1 = cw2 = WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0;
 	CAA = CBB = CAB = norm = KAA = KBB = KAB = KBA = ga = gb = kab = kba = async = 0.0; 
 	bp = bm = phi = psi = del = Lc = 0.0; 
@@ -2174,9 +2175,8 @@ void coupled_slabs::compute_coefficients(double pitch, bool loud)
 			double t2 = psi - del; 
 
 			// compute the elements of the matrices V and Vinv
-			int rs = 2, cs = 2; 
-			V = vecut::zero_mat(rs, cs); 
-			Vinv = vecut::zero_mat(rs, cs);
+			V = vecut::zero_cmat(msize, msize); 
+			Vinv = vecut::zero_cmat(msize, msize);
 
 			V[0][0] = kab; V[0][1] = kab; 
 			V[1][0] = -1.0 * t1; V[1][1] = t2; 
@@ -2227,13 +2227,13 @@ void coupled_slabs::compute_coefficients(double pitch, bool loud)
 				std::cout << "Lc = " << Lc << "um\n\n"; 
 
 				std::cout << "Matrix V\n"; 
-				vecut::print_to_screen(V); 
+				vecut::print_cmat(V); 
 				std::cout << "\n"; 
 
 				std::cout << "det(V) = " << detV << "\n\n"; 
 
 				std::cout << "Matrix V^{-1}\n";
-				vecut::print_to_screen(Vinv);
+				vecut::print_cmat(Vinv);
 				std::cout << "\n";
 			}
 		}
@@ -2999,19 +2999,24 @@ double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 	}
 }
 
-void coupled_slabs::define_P(double z)
+void coupled_slabs::define_P(double z, bool loud)
 {
 	// Compute the propagation matrix P at position z along the direction of propagation
 	
 	try {
 	
 		if (coeffs_defined) {
-			int rs = 2, cs = 2;
 
-			P = vecut::zero_cmat(rs, cs);
+			P = vecut::zero_cmat(msize, msize);
 
 			P[0][0] = exp(eye * bp * z);
 			P[1][1] = exp(eye * bm * z);
+
+			if (loud) {
+				std::cout << "Propagation Matrix M z = " << z << "\n";
+				vecut::print_cmat(P); 
+				std::cout << "\n"; 
+			}
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::define_P(double z)\n";
@@ -3026,17 +3031,29 @@ void coupled_slabs::define_P(double z)
 	}
 }
 
-void coupled_slabs::define_M(double z)
+void coupled_slabs::define_M(double z, bool loud)
 {
 	// Compute the propagation matrix M = V . P . V^{-1} at position z along the direction of propagation
 
 	try {
 
 		if (coeffs_defined) {
-			define_P(z); 
+
+			// define the propagation matrix P
+			define_P(z, loud); 
 
 			// Need to compute the matrix product here
+			std::vector<std::vector<std::complex<double>>> M1; 
+			
+			M1 = vecut::cmat_cmat_product(V, P); 
 
+			M = vecut::cmat_cmat_product(M1, Vinv); 
+
+			if (loud) {
+				std::cout << "Propagation Matrix M z = "<<z<<"\n";
+				vecut::print_cmat(M);
+				std::cout << "\n";
+			}
 		}
 		else {
 			std::string reason = "Error: void coupled_slabs::define_P(double z)\n";
@@ -3051,7 +3068,7 @@ void coupled_slabs::define_M(double z)
 	}
 }
 
-void coupled_slabs::propagate(double length, double step_size, double a0, double b0)
+void coupled_slabs::propagate(double length, double step_size, double a0, double b0, bool loud)
 {
 	// compute the field in the coupled waveguide along its length
 	// assume initial condition (a0 b0)^{T}
@@ -3064,15 +3081,28 @@ void coupled_slabs::propagate(double length, double step_size, double a0, double
 		bool c10 = c1 && c2 && c3 && c4; 
 
 		if (c10 && coeffs_defined) {
+
+			std::vector<std::complex<double>> IC(msize, zero); 
+			std::vector<std::complex<double>> AB(msize, zero); 
+
+			IC[0] = a0; IC[1] = b0; 
+
 			int Nsteps = 1 + static_cast<int>(length / step_size); 
 
 			double z = 0; 
 
 			for (int i = 0; i < Nsteps; i++) {
 				
-				define_M(z); 
+				define_M(z, loud); 
 
 				// compute (a(z) b(z))^{T} = M.(a0 b0)^{T}
+				AB = vecut::cmat_cvec_product(M, IC); 
+
+				if (loud) {
+					std::cout << "(a(z) b(z))^{T} z = " << z << "\n"; 
+					for (int i = 0; i < msize; i++) std::cout << abs(AB[i]) << "\n"; 
+					std::cout << "\n\n"; 
+				}
 
 				// compute the field profile in the waveguide
 

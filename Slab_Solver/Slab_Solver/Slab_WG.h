@@ -279,6 +279,8 @@ public:
 
 	void output_modes(double pitch); 
 
+	void propagate(double length, double step_size, double a0, double b0, bool loud = false);
+
 	// getters
 	inline double get_CAB() { return CAB;  } // overlap integral
 	inline double get_kab() { return kab;  } // coupling coefficient
@@ -296,14 +298,15 @@ private:
 	double integrate_KAB(double pitch, bool scale = false, bool loud = false);
 	double integrate_KBA(double pitch, bool scale = false, bool loud = false);
 
-	void define_P(double z); 
-	void define_M(double z); 
-	void propagate(double length, double step_size, double a0, double b0); 
+	void define_P(double z, bool loud = false); 
+	void define_M(double z, bool loud = false); 
 
 private: 
 	bool pol; // going to assume TE polarisation for simplicity
 	bool wg_defined; 
 	bool coeffs_defined; 
+
+	int msize; 
 
 	// It's easier to store these values in the class than to try and access them through the waveguide objects
 	double cw1, cw2; // constants needed in the calculation
@@ -326,9 +329,10 @@ private:
 	double bp, bm, phi, psi, del, Lc; 
 
 	// propagation matrices
-	std::vector<std::vector<double>> V; 
-	std::vector<std::vector<double>> Vinv; 
+	std::vector<std::vector<std::complex<double>>> V;
+	std::vector<std::vector<std::complex<double>>> Vinv;
 	std::vector<std::vector<std::complex<double>>> P; 
+	std::vector<std::vector<std::complex<double>>> M; 
 
 	// slab waveguide objects
 	slab_tl_mode WGA; 
