@@ -296,6 +296,8 @@ private:
 	double integrate_KAB(double pitch, bool scale = false, bool loud = false);
 	double integrate_KBA(double pitch, bool scale = false, bool loud = false);
 
+	void define_P(double z); 
+
 private: 
 	bool pol; // going to assume TE polarisation for simplicity
 	bool wg_defined; 
@@ -318,7 +320,14 @@ private:
 	double CAA, CBB, CAB, norm; 
 	double KAA, KBB, KAB, KBA; 
 	double ga, gb, kab, kba, async;
+	double bp, bm, phi, psi, del, Lc; 
 
+	// propagation matrices
+	std::vector<std::vector<double>> V; 
+	std::vector<std::vector<double>> Vinv; 
+	std::vector<std::vector<std::complex<double>>> P; 
+
+	// slab waveguide objects
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 
 };

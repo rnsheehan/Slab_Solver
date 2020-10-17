@@ -192,16 +192,16 @@ void testing::coupled_slab()
 	// Coupling coefficient between two Si wires of width W = 450 nm, D = 300 nm is kappa = 2.4 um^{-1}, L_{c} = 653 nm
 	// Calculation is correct when TE polarisation is assumed in slab
 	// Citation?
-	double Wa = 0.45, Wb = 0.45, l = 1.55, ncorea = 2.81, ncoreb = 2.81, nsub = 1.0, pitch = 0.75; 
+	//double Wa = 0.45, Wb = 0.45, l = 1.55, ncorea = 2.81, ncoreb = 2.81, nsub = 1.0, pitch = 0.75; 
 
 	//double Wa = 1.5, Wb = 2.0, l = 1.55, ncorea = 3.38, ncoreb = 3.4, nsub = 3.17, pitch = 1.85;
 
 	// Test Problem from Chuang
 	// Strong coupling between pair of coupled Ti-diffused LiNbO3 WG
 	// C = 0.168, kab = kba ~ 0.0027 for pitch = 3.9 um
-	/*double Wa = 2.0, Wb = 2.0, l = 1.06, ncorea = 2.2, ncoreb = 2.2, nsub = 2.19, pitch = 3.9;
+	double Wa = 2.0, Wb = 2.0, l = 1.06, ncorea = 2.2, ncoreb = 2.2, nsub = 2.19, pitch = 3.9;
 	double dn = +0.0;
-	ncorea += 0.5 * dn; ncoreb -= 0.5 * dn;*/
+	ncorea += 0.5 * dn; ncoreb -= 0.5 * dn;
 
 	std::cout << "Domains\n"; 
 	std::cout << "-a <= x <= +a: " << -0.5 * Wa << " <= x <= " << 0.5 * Wa << "\n"; 

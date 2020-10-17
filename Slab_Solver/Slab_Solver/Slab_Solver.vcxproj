@@ -119,6 +119,7 @@
     <ClCompile Include="Slab_WG.cpp" />
     <ClCompile Include="Test_Functions.cpp" />
     <ClCompile Include="Useful.cpp" />
+    <ClCompile Include="Vector_Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Attach.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="Templates.h" />
     <ClInclude Include="Test_Functions.h" />
     <ClInclude Include="Useful.h" />
+    <ClInclude Include="Vector_Utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

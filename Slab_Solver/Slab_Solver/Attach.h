@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include <cmath>
+#include <complex>
 #include <vector>
 #include <iterator>
 
@@ -46,8 +47,18 @@ static const double ETA = sqrt(MU / EPSILON); // Impedance of free space
 static const bool TE = true; // TE polarisation 
 static const bool TM = false; // TM polarisation
 
+static const int MAX_PATH_LENGTH = 250; // max. length for a directory in Windows OS
+
+static const std::string empty_str = "";
+static const std::string dottxt = ".txt";
+
+static const std::complex<double> zero(0.0, 0.0);
+static const std::complex<double> eye(0.0, 1.0);
+static const std::complex<double> one(1.0, 0.0);
+
 #include "Templates.h"
 #include "Useful.h"
+#include "Vector_Utils.h"
 
 #include "Slab_WG.h"
 

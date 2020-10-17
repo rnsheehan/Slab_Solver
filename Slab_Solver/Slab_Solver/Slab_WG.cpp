@@ -2043,6 +2043,7 @@ coupled_slabs::coupled_slabs()
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
 	min_pitch = de_A = de_B = omega = wavenum = cw1 = cw2 = WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0;
 	CAA = CBB = CAB = norm = KAA = KBB = KAB = KBA = ga = gb = kab = kba = async = 0.0; 
+	bp = bm = phi = psi = del = Lc = 0.0; 
 }
 
 coupled_slabs::coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub)
@@ -2161,6 +2162,29 @@ void coupled_slabs::compute_coefficients(double pitch, bool loud)
 			// asynchronism factor
 			async = (gb - ga) / (2.0 * sqrt(kab * kba)); 
 
+			// propagation constants in coupled waveguides
+			phi = 0.5 * (ga + gb); 
+			del = 0.5 * (gb - ga); 
+			psi = sqrt(template_funcs::DSQR(del) + kab * kba); 
+			bp = phi + psi; 
+			bm = phi - psi; 
+			Lc = PI / fabs(bm - bp); 
+
+			double t1 = del + psi; 
+			double t2 = psi - del; 
+
+			// compute the elements of the matrices V and Vinv
+			int rs = 2, cs = 2; 
+			V = vecut::zero_mat(rs, cs); 
+			Vinv = vecut::zero_mat(rs, cs);
+
+			V[0][0] = kab; V[0][1] = kab; 
+			V[1][0] = -1.0 * t1; V[1][1] = t2; 
+
+			double detV = 2.0 * kab * psi; 
+			Vinv[0][0] = t2 / detV; Vinv[1][1] = kab / detV; 
+			Vinv[1][0] = t1 / detV; Vinv[0][1] = -1.0 * Vinv[1][1]; 
+
 			if (loud) {
 				std::cout << "Computed Coefficients\n";
 				std::cout << "Overlap Integrals\n";
@@ -2192,6 +2216,23 @@ void coupled_slabs::compute_coefficients(double pitch, bool loud)
 
 				std::cout << "Asynchronism\n";
 				std::cout << "d = " << async << "\n\n";
+
+				std::cout << "Propagation constants\n"; 
+				std::cout << "bp = " << bp << " um^{-1}\n"; 
+				std::cout << "bm = " << bm << "um^{-1}\n\n"; 
+
+				std::cout << "Coupling Length\n"; 
+				std::cout << "Lc = " << Lc << "um\n\n"; 
+
+				std::cout << "Matrix V\n"; 
+				vecut::print_to_screen(V); 
+				std::cout << "\n"; 
+
+				std::cout << "det(V) = " << detV << "\n\n"; 
+
+				std::cout << "Matrix V^{-1}\n";
+				vecut::print_to_screen(Vinv);
+				std::cout << "\n";
 			}
 		}
 		else {
@@ -2954,4 +2995,16 @@ double coupled_slabs::integrate_KBA(double pitch, bool scale, bool loud)
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
+}
+
+void coupled_slabs::define_P(double z)
+{
+	// Compute the propagation matrix P at position z along the direction of propagation
+	
+	int rs = 2, cs = 2; 
+
+	P = vecut::zero_cmat(rs, cs); 
+
+	P[0][0] = exp(eye * bp * z); 
+	P[1][1] = exp(eye * bm * z); 
 }
