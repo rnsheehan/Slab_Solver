@@ -2039,7 +2039,7 @@ double coupled_slab_tl_neff::compute_coupling_coeff(bool mode)
 coupled_slabs::coupled_slabs()
 {
 	// default constructor
-	wg_defined = false; 
+	wg_defined = false; coeffs_defined = false; 
 	pol = TE; // going to assume TE polarisation for all calcs for simplicity
 	min_pitch = de_A = de_B = omega = wavenum = cw1 = cw2 = WA = WB = n_core_A = n_core_B = n_sub = wavel = 0.0;
 	CAA = CBB = CAB = norm = KAA = KBB = KAB = KBA = ga = gb = kab = kba = async = 0.0; 
@@ -2184,6 +2184,8 @@ void coupled_slabs::compute_coefficients(double pitch, bool loud)
 			double detV = 2.0 * kab * psi; 
 			Vinv[0][0] = t2 / detV; Vinv[1][1] = kab / detV; 
 			Vinv[1][0] = t1 / detV; Vinv[0][1] = -1.0 * Vinv[1][1]; 
+
+			coeffs_defined = true; 
 
 			if (loud) {
 				std::cout << "Computed Coefficients\n";
@@ -3001,10 +3003,98 @@ void coupled_slabs::define_P(double z)
 {
 	// Compute the propagation matrix P at position z along the direction of propagation
 	
-	int rs = 2, cs = 2; 
+	try {
+	
+		if (coeffs_defined) {
+			int rs = 2, cs = 2;
 
-	P = vecut::zero_cmat(rs, cs); 
+			P = vecut::zero_cmat(rs, cs);
 
-	P[0][0] = exp(eye * bp * z); 
-	P[1][1] = exp(eye * bm * z); 
+			P[0][0] = exp(eye * bp * z);
+			P[1][1] = exp(eye * bm * z);
+		}
+		else {
+			std::string reason = "Error: void coupled_slabs::define_P(double z)\n";
+			if (!coeffs_defined) reason += "propagation parameters are not defined\n";
+			
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void coupled_slabs::define_M(double z)
+{
+	// Compute the propagation matrix M = V . P . V^{-1} at position z along the direction of propagation
+
+	try {
+
+		if (coeffs_defined) {
+			define_P(z); 
+
+			// Need to compute the matrix product here
+
+		}
+		else {
+			std::string reason = "Error: void coupled_slabs::define_P(double z)\n";
+			if (!coeffs_defined) reason += "propagation parameters are not defined\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void coupled_slabs::propagate(double length, double step_size, double a0, double b0)
+{
+	// compute the field in the coupled waveguide along its length
+	// assume initial condition (a0 b0)^{T}
+
+	try {
+		bool c1 = length > 0.0 ? true : false; 
+		bool c4 = step_size > 0.0 && step_size <= length ? true : false; 
+		bool c2 = a0 >= 0.0 && a0<= 1.0 ? true : false; 
+		bool c3 = b0 >= 0.0 && b0 <= 1.0 ? true : false; 
+		bool c10 = c1 && c2 && c3 && c4; 
+
+		if (c10 && coeffs_defined) {
+			int Nsteps = 1 + static_cast<int>(length / step_size); 
+
+			double z = 0; 
+
+			for (int i = 0; i < Nsteps; i++) {
+				
+				define_M(z); 
+
+				// compute (a(z) b(z))^{T} = M.(a0 b0)^{T}
+
+				// compute the field profile in the waveguide
+
+				// output the results
+
+				z += step_size; 
+			}
+
+		}
+		else {
+			std::string reason = "Error: void coupled_slabs::propagate(double length, double a0, double b0)\n";
+			if (!c1) reason += "length = " + template_funcs::toString(length, 2) + " is not positive\n"; 
+			if (!c4) reason += "step_size = " + template_funcs::toString(step_size, 2) + " is too large\n";
+			if (!c2) reason += "IC a0 = " + template_funcs::toString(a0, 2) + " is not in range\n"; 
+			if (!c3) reason += "IC b0 = " + template_funcs::toString(b0, 2) + " is not in range\n"; 
+			if (!coeffs_defined) reason += "propagation parameters are not defined\n";
+
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
 }

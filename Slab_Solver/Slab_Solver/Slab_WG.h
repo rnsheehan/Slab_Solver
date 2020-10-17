@@ -297,10 +297,13 @@ private:
 	double integrate_KBA(double pitch, bool scale = false, bool loud = false);
 
 	void define_P(double z); 
+	void define_M(double z); 
+	void propagate(double length, double step_size, double a0, double b0); 
 
 private: 
 	bool pol; // going to assume TE polarisation for simplicity
 	bool wg_defined; 
+	bool coeffs_defined; 
 
 	// It's easier to store these values in the class than to try and access them through the waveguide objects
 	double cw1, cw2; // constants needed in the calculation
