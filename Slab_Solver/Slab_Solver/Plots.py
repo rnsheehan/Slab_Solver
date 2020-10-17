@@ -173,6 +173,51 @@ def chuang_plots():
     except Exception as e:
         print(ERR_STATEMENT)
         print(e)
+        
+def coupling_ampl():
+    # make of the coupling amplitudes for each waveguide
+    # R. Sheehan 16 - 10 - 2020
+    
+    FUNC_NAME = ".coupling_ampl()" # use this in exception handling messages
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+    
+    try:
+        filename = "Coupled_Mode_Coefficients.txt"
+        
+        if glob.glob(filename):
+            # import the dataset
+            data = np.loadtxt(filename, delimiter = ',', unpack = True)
+            
+            # multi-curve plot required
+            hv_data = []; labels = []; marks = [];
+            
+            hv_data.append([data[0], data[1]]); labels.append('|a(z)|'); marks.append(Plotting.labs_lins[2]); 
+            hv_data.append([data[0], data[2]]); labels.append('|b(z)|'); marks.append(Plotting.labs_lins[3]); 
+            
+            
+            
+            print("max(a(z)) occurs at z = ",data[0][np.argmax(data[1])])
+            print("min(b(z)) occurs at z = ",data[0][np.argmin(data[2])])
+       
+            # make the plot of the data set
+            args = Plotting.plot_arg_multiple()
+
+            args.loud = True
+            args.crv_lab_list = labels
+            args.mrk_list = marks
+            args.x_label = 'Waveguide Length um'
+            args.y_label = 'Coupling Amplitudes'
+            args.fig_name = filename.replace('.txt','') + '_CA'
+
+            Plotting.plot_multiple_curves(hv_data, args)
+
+            del hv_data; del labels; del marks; 
+            
+        else:
+            raise Exception
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
 
 def main():
     pass
@@ -186,6 +231,8 @@ if __name__ == '__main__':
     
     #disp_eqn_plot()
     
-    mode_plot()
+    #mode_plot()
     
     #chuang_plots()
+    
+    coupling_ampl()

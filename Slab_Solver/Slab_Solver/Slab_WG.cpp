@@ -3091,6 +3091,11 @@ void coupled_slabs::propagate(double length, double step_size, double a0, double
 
 			double z = 0; 
 
+			std::string filename = "Coupled_Mode_Coefficients.txt";
+			std::ofstream write;
+
+			write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
 			for (int i = 0; i < Nsteps; i++) {
 				
 				define_M(z, loud); 
@@ -3104,12 +3109,16 @@ void coupled_slabs::propagate(double length, double step_size, double a0, double
 					std::cout << "\n\n"; 
 				}
 
+				write << z << " , " << abs(AB[0]) << " , " << abs(AB[1]) << "\n"; 
+
 				// compute the field profile in the waveguide
 
 				// output the results
 
 				z += step_size; 
 			}
+
+			write.close(); 
 
 		}
 		else {

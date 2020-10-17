@@ -239,7 +239,7 @@ void testing::coupled_slab()
 
 	wg_pair.compute_coefficients(pitch, true); 
 
-	wg_pair.propagate(500, 100, 0, 1, true); 
+	wg_pair.propagate(1200, 10, 0, 1, false); 
 }
 
 void testing::coupled_slab_benchmark()
