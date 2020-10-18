@@ -176,7 +176,7 @@ def chuang_plots():
         
 def coupling_ampl():
     # make of the coupling amplitudes for each waveguide
-    # R. Sheehan 16 - 10 - 2020
+    # R. Sheehan 17 - 10 - 2020
     
     FUNC_NAME = ".coupling_ampl()" # use this in exception handling messages
     ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
@@ -187,14 +187,13 @@ def coupling_ampl():
         if glob.glob(filename):
             # import the dataset
             data = np.loadtxt(filename, delimiter = ',', unpack = True)
+
             
             # multi-curve plot required
             hv_data = []; labels = []; marks = [];
             
             hv_data.append([data[0], data[1]]); labels.append('|a(z)|'); marks.append(Plotting.labs_lins[2]); 
             hv_data.append([data[0], data[2]]); labels.append('|b(z)|'); marks.append(Plotting.labs_lins[3]); 
-            
-            
             
             print("max(a(z)) occurs at z = ",data[0][np.argmax(data[1])])
             print("min(b(z)) occurs at z = ",data[0][np.argmin(data[2])])
@@ -218,6 +217,39 @@ def coupling_ampl():
     except Exception as e:
         print(ERR_STATEMENT)
         print(e)
+        
+def coupled_fields(stepsize, stepnum):
+    # make a plot of the coupled fields as they propagate
+    # R. Sheehan 18 - 10 - 2020
+    
+    FUNC_NAME = ".coupled_fields()" # use this in exception handling messages
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+    
+    try:
+        filename = "Coupled_Field_dz_%(v1)d_step_%(v2)s.txt"%{"v1":stepsize, "v2":stepnum}
+        
+        if glob.glob(filename):
+            # import the dataset
+            data = np.loadtxt(filename, delimiter = ',', unpack = True)
+            
+            # plot the overlap integral versus RI difference
+            args = Plotting.plot_arg_single()
+            
+            args.loud = True
+            #args.curve_label = '$\beta$'
+            args.marker = Plotting.labs_lins[1]
+            args.x_label = 'Position ($\mu$m)'
+            args.y_label = 'Field Value'
+            args.plt_title = 'z = %(v1)d $\mu$m'%{"v1":(stepsize*stepnum)}
+            args.fig_name = filename.replace('.txt','')
+            
+            Plotting.plot_single_curve(data[0], data[1], args)
+            
+        else:
+            raise Exception
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
 
 def main():
     pass
@@ -235,4 +267,7 @@ if __name__ == '__main__':
     
     #chuang_plots()
     
-    coupling_ampl()
+    #coupling_ampl()
+    
+    for i in range(0, 120, 10):
+        coupled_fields(10, i)

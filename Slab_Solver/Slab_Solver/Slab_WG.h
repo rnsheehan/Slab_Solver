@@ -334,6 +334,11 @@ private:
 	std::vector<std::vector<std::complex<double>>> P; 
 	std::vector<std::vector<std::complex<double>>> M; 
 
+	// storage 
+	std::vector<double> pos; 
+	std::vector<std::complex<double>> Afield;
+	std::vector<std::complex<double>> Bfield;
+
 	// slab waveguide objects
 	slab_tl_mode WGA; 
 	slab_tl_mode WGB; 

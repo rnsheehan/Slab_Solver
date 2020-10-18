@@ -2266,6 +2266,7 @@ void coupled_slabs::output_modes(double pitch)
 			double xmid = 0.5 * pitch + 0.25 * (WA + WB); // midpoint of simulation region
 			double x0 = xmid - 0.5 * Lx; // start computing solutions here
 			double dx = Lx / (N - 1); 
+			double vA, vB; 
 
 			std::string filename = "Coupled_Mode_Profiles.txt";
 			std::ofstream write;
@@ -2275,7 +2276,15 @@ void coupled_slabs::output_modes(double pitch)
 			if (write.is_open()) {
 				
 				for (int i = 0; i < N; i++) {
-					write << std::setprecision(10) << x0 << " , " << WGA.TE_TM(x0, 0, pol) << " , " << WGB.TE_TM(x0 - pitch, 0, pol) << "\n"; 
+					vA = WGA.TE_TM(x0, 0, pol); 
+					vB = WGB.TE_TM(x0 - pitch, 0, pol); 
+					write << std::setprecision(10) << x0 << " , " << vA << " , " << vB << "\n"; 
+
+					// store the field values for later use
+					Afield.push_back(std::complex<double>(vA, 0.0)); 
+					Bfield.push_back(std::complex<double>(vB, 0.0)); 
+					pos.push_back(x0); 
+
 					x0 += dx; 
 				}
 
@@ -3109,9 +3118,22 @@ void coupled_slabs::propagate(double length, double step_size, double a0, double
 					std::cout << "\n\n"; 
 				}
 
-				write << z << " , " << abs(AB[0]) << " , " << abs(AB[1]) << "\n"; 
+				write << std::setprecision(10) << z << " , " << abs(AB[0]) << " , " << abs(AB[1]) << "\n"; 
 
 				// compute the field profile in the waveguide
+				if (i%10 == 0 && !Afield.empty() && !Bfield.empty() && Afield.size() == Bfield.size()) {
+
+					std::string fieldfile = "Coupled_Field_dz_" + template_funcs::toString(step_size) + "_step_" + template_funcs::toString(i) + dottxt; 
+					std::ofstream writefield; 
+
+					writefield.open(fieldfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+					for (size_t j = 0; j < Afield.size(); j++) {
+						writefield << std::setprecision(10) << pos[j] << " , " << abs( Afield[j]*AB[0] + Bfield[j]*AB[1] ) << "\n";
+					}
+
+					writefield.close(); 
+				}
 
 				// output the results
 
