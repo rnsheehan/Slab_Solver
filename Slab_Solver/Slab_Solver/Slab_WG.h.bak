@@ -30,6 +30,7 @@ protected:
 	int M; // Predicted number of modes that waveguide can support
 
 	double d; // Waveguide Width
+	double tt; // Half Waveguide Width
 	double dr; // Rib Width
 	double nc; // Core Index
 	double ncl; // Cladding Index
@@ -86,6 +87,12 @@ public:
 	void set_params(double width, double lambda, double ncore, double nsub, double nclad); // assign the parameters needed to perform the neff_search calculation
 
 	void neff_search(bool mode); // compute the effective indices for a waveguide
+
+	void report(bool mode);
+
+	int get_nmodes(bool mode); // return the number of computed modes
+
+	double get_neff(int i, bool mode); // return the ith computed effective index 
 
 private:
 	// methods that the user does not need access to
@@ -201,6 +208,12 @@ public:
 	void set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
 
 	void neff_search(bool mode);
+	
+	//void report(bool mode);
+
+	//int get_nmodes(bool mode); // return the number of computed modes
+
+	//double get_neff(int i, bool mode); // return the ith computed effective index 
 
 private:
 	double eigeneqn_b(double x, int mm, bool t);
@@ -246,9 +259,9 @@ public:
 	double compute_coupling_coeff(bool mode); 
 
 private:
-	double slab_sep; 
-	double coupling_coeff; 
-	double L_coupling; 
+	double slab_sep; // separation of the slab waveguides != pitch
+	double coupling_coeff; // coupling coefficient kappa
+	double L_coupling; // coupling length
 };
 
 // class for computing the coupling coefficients of non-identical coupled slab waveguides
@@ -258,7 +271,77 @@ class coupled_slabs {
 public:
 	coupled_slabs(); 
 
+	coupled_slabs(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub);
 
+	void set_params(double W1, double W2, double lambda, double ncore1, double ncore2, double nsub);
+
+	void compute_coefficients(double pitch, bool loud = false);
+
+	void output_modes(double pitch); 
+
+	void propagate(double length, double step_size, double a0, double b0, bool loud = false);
+
+	// getters
+	inline double get_CAB() { return CAB;  } // overlap integral
+	inline double get_kab() { return kab;  } // coupling coefficient
+	inline double get_kba() { return kba;  } // coupling coefficient
+	inline double get_async() { return async;  } // asynchronism
+
+private:
+	//double integrate_modes(int integrand, double x1, double x2, double pitch);
+	double integrate_CAA(double pitch, bool scale = false, bool loud = false); 
+	double integrate_CBB(double pitch, bool scale = false, bool loud = false);
+	double integrate_CAB(double pitch, bool scale = false, bool loud = false);
+
+	double integrate_KAA(double pitch, bool scale = false, bool loud = false);
+	double integrate_KBB(double pitch, bool scale = false, bool loud = false);
+	double integrate_KAB(double pitch, bool scale = false, bool loud = false);
+	double integrate_KBA(double pitch, bool scale = false, bool loud = false);
+
+	void define_P(double z, bool loud = false); 
+	void define_M(double z, bool loud = false); 
+
+private: 
+	bool pol; // going to assume TE polarisation for simplicity
+	bool wg_defined; 
+	bool coeffs_defined; 
+
+	int msize; 
+
+	// It's easier to store these values in the class than to try and access them through the waveguide objects
+	double cw1, cw2; // constants needed in the calculation
+	double WA; // width of WGA
+	double WB; // width of WGB
+	double wavel; // wavelength at which calculation takes place
+	double wavenum; // wavenumber 
+	double omega; // frequency
+	double n_core_A; // RI in core of A
+	double n_core_B; // RI in core of B
+	double n_sub; // RI in shared substrate
+	double de_A; // constant \Delta\epsilon_{a}
+	double de_B; // constant \Delta\epsilon_{b}
+	double min_pitch; // minimum waveguide pitch
+
+	// computed parameters
+	double CAA, CBB, CAB, norm; 
+	double KAA, KBB, KAB, KBA; 
+	double ga, gb, kab, kba, async;
+	double bp, bm, phi, psi, del, Lc; 
+
+	// propagation matrices
+	std::vector<std::vector<std::complex<double>>> V;
+	std::vector<std::vector<std::complex<double>>> Vinv;
+	std::vector<std::vector<std::complex<double>>> P; 
+	std::vector<std::vector<std::complex<double>>> M; 
+
+	// storage 
+	std::vector<double> pos; 
+	std::vector<std::complex<double>> Afield;
+	std::vector<std::complex<double>> Bfield;
+
+	// slab waveguide objects
+	slab_tl_mode WGA; 
+	slab_tl_mode WGB; 
 };
 
 #endif

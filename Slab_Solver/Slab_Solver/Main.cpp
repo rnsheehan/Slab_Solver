@@ -18,9 +18,9 @@ int main()
 
 	//testing::coupled_slab_wg_calc(); 
 
-	testing::coupled_slab(); 
+	//testing::coupled_slab(); 
 	
-	//testing::coupled_slab_benchmark(); 
+	testing::coupled_slab_benchmark(); 
 
 	std::cout << "Press return to close\n";
 	std::cin.get(); 

@@ -1057,6 +1057,51 @@ void slab_tl_mode::output_stats(bool mode, std::ofstream &file_obj)
 	}
 }
 
+//double slab_tl_neff::coupling_coefficient(double &separ, bool mode)
+//{
+//	// estimate the coupling coefficient between this waveguide and a copy of itself
+//	// theory taken from "Fundamentals of Optical Waveguides", Okamoto
+//	// method uses the waveguide effective index to compute the approximation
+//	// you could potentially vary the ridge width when doing this calculation, but adding another layer of objects to enable
+//	// this would be very confusing
+//	// calculation uses the info that was input into to enable calculation of 2D WG neff, so wavelength and material parameters are the same
+//	// R. Sheehan 1 - 10 - 2018
+//	// Added here 13 - 5 - 2019
+//
+//	try {
+//		if (nbeta(mode) > 0) {
+//
+//			double tt = d / 2;
+//			double hh = h(0, mode);
+//			double pp = p(0, mode);
+//			double vs = template_funcs::DSQR(k * na);
+//			double num = template_funcs::DSQR(hh * pp);
+//			double denom = _beta(0, mode)*(1.0 + (tt * pp))*vs;
+//			double arg = -1.0 * pp * (separ - d);
+//
+//			if (denom > 0) {
+//				return ((num / denom)* exp(arg));
+//			}
+//			else {
+//				std::string reason = "Error: double slab_tl_neff::coupling_coefficient(double &separ, bool mode)\n"; 
+//				reason += "Division by zero occurred\n"; 
+//				throw std::runtime_error(reason);
+//				return 0.0;
+//			}
+//		}
+//		else {
+//			std::string reason = "Error: double slab_tl_neff::coupling_coefficient(double &separ, bool mode)\n"; 
+//			reason += "No modes computed for this waveguide\n";
+//			throw std::runtime_error(reason);
+//			return 0.0;
+//		}
+//	}
+//	catch (std::runtime_error &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
+
 // Definitions for the four layer slab derived class
 
 slab_fl_neff_A::slab_fl_neff_A()
@@ -1834,6 +1879,80 @@ void slab_fl_neff_B::neff_search(bool mode)
 		}
 	}
 	catch (std::range_error &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_neff_B::report(bool mode)
+{
+	// print the computed results to screen
+	std::cout << "Output for the slab waveguide calculator\n";
+	std::cout << "\n";
+	std::cout << "Waveguide width = " << d << " microns\n";
+	std::cout << "Rib width = " << dr << " microns\n";
+	std::cout << "Wavelength = " << l << " microns\n";
+	std::cout << "Wavenumber = " << k << " inverse microns\n";
+	std::cout << "\n";
+	std::cout << "Core Index = " << nc << "\n";
+	std::cout << "Substrate Index = " << ns << "\n";
+	std::cout << "Rib Index = " << nr << "\n";
+	std::cout << "Cladding Index = " << ncl << "\n";
+	std::cout << "\n";
+	std::cout << "Numerical Aperture = " << na << "\n";
+	std::cout << "V-Parameter = " << V << "\n";
+	std::cout << "Number of Modes = " << M << "\n";
+	std::cout << "\n";
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::cout << pol << " Modes\n";
+	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
+
+	for (int i = 0; i < nbeta(mode); i++) {
+		std::cout << pol + "_{" << i + 1 << "} = " << std::setprecision(10) << _beta(i, mode) << " , n_eff_{" << i + 1 << "} = " << std::setprecision(10) << (_beta(i, mode) / k) << "\n";
+	}
+	std::cout << "\n";
+}
+
+int slab_fl_neff_B::get_nmodes(bool mode)
+{
+	// return the number of computed propagation constants for a given polarisation
+	// it can be the case that the predicted value M is greater than the actual number of modes in a waveguide
+
+	return nbeta(mode);
+}
+
+double slab_fl_neff_B::get_neff(int i, bool mode)
+{
+	// return the i^{th} effective index for a given polarisation
+	// by convention mode == true => TE modes, mode == false => TM modes
+
+	try {
+		if (nbeta(mode) > 0) {
+			if (i<0 || i > nbeta(mode)) {
+				throw std::range_error("Error: double slab_fl_neff_B::get_neff(int i, bool t)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				if (mode) {
+					return betaE[i] / k;
+				}
+				else {
+					return betaH[i] / k;
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument("Error: double slab_fl_neff_B::get_neff(int i, bool t)\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error& e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}

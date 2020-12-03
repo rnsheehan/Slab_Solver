@@ -208,12 +208,12 @@ public:
 	void set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
 
 	void neff_search(bool mode);
-	
-	//void report(bool mode);
 
-	//int get_nmodes(bool mode); // return the number of computed modes
+	void report(bool mode);
 
-	//double get_neff(int i, bool mode); // return the ith computed effective index 
+	int get_nmodes(bool mode); // return the number of computed modes
+
+	double get_neff(int i, bool mode); // return the ith computed effective index
 
 private:
 	double eigeneqn_b(double x, int mm, bool t);
