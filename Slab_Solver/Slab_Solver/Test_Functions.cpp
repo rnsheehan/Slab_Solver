@@ -53,8 +53,8 @@ void testing::slab_wg_mode_calc()
 
 	double W, WL, Nc, Ns, Ncl; 
 
-	W = 2.0;  WL = 1.55; 
-	Nc = 3.38; Ns = 3.17; Ncl = 3.17;
+	W = 2.0;  WL = 1.55;
+	Nc = 3.38; Ns = 1.0; Ncl = 1.0;
 
 	//W = 1.7;  WL = 6.158;
 	//Nc = 3.54102488; Ns = 1.75275048;
@@ -73,7 +73,7 @@ void testing::slab_wg_mode_calc()
 
 	slab_tl_mode sl_obj;
 
-	sl_obj.set_params(W, WL, Nc, Ns, Ns);
+	sl_obj.set_params(W, WL, Nc, Ns, Ncl);
 
 	sl_obj.compute_neff(TE); 
 
@@ -114,9 +114,15 @@ void testing::fl_slab_wg_neff_calc()
 	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
 	//W = 0.5; Wr = 0.5; WL = 1.55; // n_{TM} = 3.274464
 	//W = 0.5; Wr = 1.0; WL = 1.55; // n_{TM} = 3.27562
-	W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
+	//W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
 	//W = 0.6; Wr = 0.9; WL = 1.55; // n_{TM} = 3.293
-	Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
+	//Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
+	
+	W = 0.45; Wr = 0.3; WL = 1.55; // no modes present
+	Ns = 3.17; Nc = 3.38; Nr = 3.341; Ncl = 1.0; // no modes present
+
+	//W = 0.6; Wr = 0.5; WL = 1.55;
+	//Ns = 3.17; Nc = 3.38; Nr = 3.19; Ncl = 1.0; 
 
 	slab_fl_mode_A fl_obj;
 
@@ -124,7 +130,7 @@ void testing::fl_slab_wg_neff_calc()
 
 	fl_obj.set_params(W, Wr, WL, Nc, Ns, Ncl, Nr); 
 
-	fl_obj.compute_neff(TE); 
+	fl_obj.compute_neff(TM); 
 }
 
 void testing::fl_slab_wg_mode_calc()
