@@ -21,7 +21,9 @@ protected:
 
 	double q(int i, bool t); // wavenumber in cladding
 
-	double r(int i, bool t); // wavenumber in rib
+	double rA(int i, bool t); // wavenumber in rib for case A of FL slab
+
+	double rB(int i, bool t); // wavenumber in rib for case B of FL slab
 
 	double _beta(int i, bool t); // return the computed propagation constants
 
@@ -178,12 +180,14 @@ public:
 
 	//void output_all_stats(std::string &storage_directory);
 
-	//void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
+	void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
+
+	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
 
 private:
 	double phase(int i, bool t); // phase of waveguide mode
 
-	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
+	//double TE_TM(double x, int i, bool mode); // shape of waveguide mode
 
 	//double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
 
@@ -232,12 +236,14 @@ public:
 
 	//void output_all_stats(std::string &storage_directory);
 
-	//void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
+	void output_modes(bool mode, int N, double Lx, std::string &storage_directory); // Output solutions to a file
+
+	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
 
 private:
 	double phase(int i, bool t); // phase of waveguide mode
 
-	double TE_TM(double x, int i, bool mode); // shape of waveguide mode
+	//double TE_TM(double x, int i, bool mode); // shape of waveguide mode
 
 	//double eigeneqn(double x, bool t); // Non-linear equation for the propagation constants
 

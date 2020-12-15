@@ -136,24 +136,24 @@ double slab::q(int i, bool t)
 	}
 }
 
-double slab::r(int i, bool t)
+double slab::rA(int i, bool t)
 {
-	//Wavenumber in Rib
+	//Wavenumber in Rib for Case A of FL slab
 
 	try {
 
 		if (nbeta(t) > 0) {
 
 			if (i<0 || i > nbeta(t)) {
-				throw std::range_error("Error: double slab::r(int i, bool t)\n Attempting to access arrays out of range\n");
+				throw std::range_error("Error: double slab::rA(int i, bool t)\n Attempting to access arrays out of range\n");
 				return 0;
 			}
 			else {
 				if (t) {
-					return sqrt( template_funcs::DSQR(betaE[i]) - k_sqr_nr_sqr);
+					return sqrt(k_sqr_nr_sqr - template_funcs::DSQR(betaE[i]));
 				}
 				else {
-					return sqrt( template_funcs::DSQR(betaH[i]) - k_sqr_nr_sqr);
+					return sqrt(k_sqr_nr_sqr - template_funcs::DSQR(betaH[i]));
 				}
 			}
 
@@ -168,6 +168,43 @@ double slab::r(int i, bool t)
 		return 0;
 	}
 	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab::rB(int i, bool t)
+{
+	//Wavenumber in Rib for Case B of FL slab
+
+	try {
+
+		if (nbeta(t) > 0) {
+
+			if (i<0 || i > nbeta(t)) {
+				throw std::range_error("Error: double slab::rB(int i, bool t)\n Attempting to access arrays out of range\n");
+				return 0;
+			}
+			else {
+				if (t) {
+					return sqrt(template_funcs::DSQR(betaE[i]) - k_sqr_nr_sqr);
+				}
+				else {
+					return sqrt(template_funcs::DSQR(betaH[i]) - k_sqr_nr_sqr);
+				}
+			}
+
+		}
+		else {
+			throw std::invalid_argument("Error: double slab::r(int i, bool t)\nNo modes have been computed\n");
+			return 0;
+		}
+	}
+	catch (std::range_error& e) {
+		std::cerr << e.what();
+		return 0;
+	}
+	catch (std::invalid_argument& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
@@ -1452,14 +1489,14 @@ void slab_fl_mode_A::compute_neff(bool mode)
 
 	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
 	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
-		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << "\n";
+		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << " , n_{eff} = " << _beta(i, mode) / k << "\n";
 	}
 	std::cout << "\n";
 }
 
 double slab_fl_mode_A::phase(int i, bool t)
 {
-	// Phase of mode in type B four layer slab waveguide
+	// Phase of mode in type A four layer slab waveguide
 
 	try {
 		if (nbeta(t) > 0) {
@@ -1470,13 +1507,13 @@ double slab_fl_mode_A::phase(int i, bool t)
 			else {
 				if (t) {
 					double qq = q(i, t);
-					double rr = r(i, t);
-					return -1.0*((dr * rr) + atanh(qq / rr));
+					double rr = rA(i, t);
+					return ( atan( qq / rr ) - (dr * rr) );
 				}
 				else {
 					double qq = q(i, t);
-					double rr = r(i, t);
-					return -1.0*((dr * rr) + atanh((etarcl * qq) / rr));
+					double rr = rA(i, t);
+					return ( atan( etarcl * ( qq / rr) ) - ( dr * rr ) );
 				}
 			}
 		}
@@ -1510,7 +1547,7 @@ double slab_fl_mode_A::TE_TM(double x, int i, bool mode)
 			}
 			else {
 				double hh = h(i, mode);
-				double rr = r(i, mode);
+				double rr = rA(i, mode);
 				double wh = d * hh;
 				double qq = q(i, mode);
 				double pp = p(i, mode);
@@ -1546,6 +1583,75 @@ double slab_fl_mode_A::TE_TM(double x, int i, bool mode)
 	catch (std::invalid_argument &e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_mode_A::output_modes(bool mode, int N, double Lx, std::string& storage_directory)
+{
+	// This function will calculate the solutions corresponding to each mode and output them to a file for a single polarisation
+
+	double xi;
+
+	std::string filename;
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::ofstream write;
+
+	if (nbeta(mode) > 0) {
+
+		std::vector< std::vector< double > > mat;
+
+		mat.resize(nbeta(mode) + 2); // We want to output M solutions plus the corresponding positions
+
+		double dx = Lx / (static_cast<double>(N - 1));
+
+		xi = -0.5 * Lx;
+
+		mat[0].resize(N + 2);
+
+		for (int j = 1; j <= N; j++) {
+			mat[0][j] = xi;
+			xi += dx;
+		}
+
+		for (int i = 1; i <= nbeta(mode); i++) {
+			mat[i].resize(N + 2);
+			for (int j = 1; j <= N; j++) {
+				mat[i][j] = TE_TM(mat[0][j], i - 1, mode);
+			}
+		}
+
+		// Output all the modes to a single file
+		filename = storage_directory + pol + "_Mode_Profiles_FL_A.txt";
+		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+		if (write.is_open()) {
+
+			for (int i = 1; i <= N; i++) {
+				for (int j = 0; j < (nbeta(mode) + 1); j++)
+					if (j == nbeta(mode))
+						write << std::setprecision(20) << mat[j][i];
+					else
+						write << std::setprecision(20) << mat[j][i] << " , ";
+				write << "\n";
+			}
+
+			write.close();
+
+		}
+
+		// output the sine-cosine form of the dispersion equation
+		/*double db = ((upper - lower) / (99));
+
+		filename = storage_directory + pol + "_Dispersion_Eqn.txt";
+		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+		for (int i = 1; i < 99; i++) {
+			write << lower + i * db << " , " << std::setprecision(20) << eigeneqn_a(lower + i * db, 0, mode) << "\n";
+		}
+
+		write.close();*/
 	}
 }
 
@@ -1999,12 +2105,12 @@ double slab_fl_mode_B::phase(int i, bool t)
 			else {
 				if (t) {
 					double qq = q(i, t);
-					double rr = r(i, t); 
+					double rr = rB(i, t); 
 					return -1.0*( ( dr * rr ) + atanh(qq/rr) );
 				}
 				else {
 					double qq = q(i, t);
-					double rr = r(i, t);
+					double rr = rB(i, t);
 					return -1.0*( ( dr * rr ) + atanh( (etarcl * qq) / rr) );
 				}
 			}
@@ -2041,7 +2147,7 @@ double slab_fl_mode_B::TE_TM(double x, int i, bool mode)
 			}
 			else {
 				double hh = h(i, mode); 
-				double rr = r(i, mode); 
+				double rr = rB(i, mode); 
 				double wh = d * hh;
 				double qq = q(i, mode);
 				double pp = p(i, mode); 
@@ -2077,6 +2183,75 @@ double slab_fl_mode_B::TE_TM(double x, int i, bool mode)
 	catch (std::invalid_argument &e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_mode_B::output_modes(bool mode, int N, double Lx, std::string& storage_directory)
+{
+	// This function will calculate the solutions corresponding to each mode and output them to a file for a single polarisation
+
+	double xi;
+
+	std::string filename;
+
+	std::string pol = (mode ? "TE" : "TM");
+
+	std::ofstream write;
+
+	if (nbeta(mode) > 0) {
+
+		std::vector< std::vector< double > > mat;
+
+		mat.resize(nbeta(mode) + 2); // We want to output M solutions plus the corresponding positions
+
+		double dx = Lx / (static_cast<double>(N - 1));
+
+		xi = -0.5 * Lx;
+
+		mat[0].resize(N + 2);
+
+		for (int j = 1; j <= N; j++) {
+			mat[0][j] = xi;
+			xi += dx;
+		}
+
+		for (int i = 1; i <= nbeta(mode); i++) {
+			mat[i].resize(N + 2);
+			for (int j = 1; j <= N; j++) {
+				mat[i][j] = TE_TM(mat[0][j], i - 1, mode);
+			}
+		}
+
+		// Output all the modes to a single file
+		filename = storage_directory + pol + "_Mode_Profiles_FL_B.txt";
+		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+		if (write.is_open()) {
+
+			for (int i = 1; i <= N; i++) {
+				for (int j = 0; j < (nbeta(mode) + 1); j++)
+					if (j == nbeta(mode))
+						write << std::setprecision(20) << mat[j][i];
+					else
+						write << std::setprecision(20) << mat[j][i] << " , ";
+				write << "\n";
+			}
+
+			write.close();
+
+		}
+
+		// output the sine-cosine form of the dispersion equation
+		/*double db = ((upper - lower) / (99));
+
+		filename = storage_directory + pol + "_Dispersion_Eqn.txt";
+		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+		for (int i = 1; i < 99; i++) {
+			write << lower + i * db << " , " << std::setprecision(20) << eigeneqn_a(lower + i * db, 0, mode) << "\n";
+		}
+
+		write.close();*/
 	}
 }
 
