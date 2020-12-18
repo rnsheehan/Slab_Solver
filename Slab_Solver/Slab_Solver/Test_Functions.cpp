@@ -138,16 +138,16 @@ void testing::fl_slab_wg_mode_calc()
 	// Compute the mode profile in a four layer slab waveguide
 	// R. Sheehan 15 - 12 - 2020
 
-	bool pol = TM; 
+	bool pol = TE; 
 
 	double W, Wr, WL, Nc, Ns, Nr, Ncl;
 
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
-	//W = 1.0; Wr = 1.0; WL = 1.55; 
+	W = 1.0; Wr = 2.0; WL = 1.55; 
 	//W = 0.5; Wr = 0.5; WL = 1.55;
 	//W = 1.0; Wr = 0.5; WL = 1.55;
-	//Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
+	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
 
 	// Case B: Field Oscillating in Core Only
 	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
@@ -160,8 +160,8 @@ void testing::fl_slab_wg_mode_calc()
 	//W = 0.45; Wr = 0.3; WL = 1.55; // no modes present case B
 	//Ns = 3.17; Nc = 3.38; Nr = 3.341; Ncl = 1.0; // no modes present case B
 
-	W = 0.6; Wr = 0.5; WL = 1.55;
-	Ns = 3.17; Nc = 3.38; Nr = 3.19; Ncl = 1.0; 
+	//W = 0.6; Wr = 0.5; WL = 1.55;
+	//Ns = 3.17; Nc = 3.38; Nr = 3.19; Ncl = 1.0; 
 
 	slab_fl_mode_A fl_obj;
 
@@ -176,10 +176,9 @@ void testing::fl_slab_wg_mode_calc()
 
 	std::cout << "\nField value at x = 0: " << fval << "\n";
 
-	int N = 101;
-	double Lz = 3.5 * W;
-	std::string stor = "";
-
+	//int N = 101;
+	//double Lz = 3.5 * (W + Wr);
+	//std::string stor = "";
 	//fl_obj.output_modes(pol, N, Lz, stor); 
 }
 

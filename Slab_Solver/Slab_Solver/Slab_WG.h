@@ -164,8 +164,12 @@ public:
 
 	void neff_search(bool mode); 
 
+	void output_disp_eqn_a(bool mode, std::string& storage_directory);
+	void output_disp_eqn_aa(bool mode, std::string& storage_directory);
+
 private:
 	double eigeneqn_a(double x, int mm, bool t);
+	double eigeneqn_aa(double x, bool t);
 
 	double zbrent(double x1, double x2, double tol, bool t, int mm); // Brent method search for roots of eigeneqn_a
 };

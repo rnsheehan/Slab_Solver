@@ -1,7 +1,8 @@
 Program Exit Explanation
 
-Error occurred: Thu Oct  8 19:56:06 2020
+Error occurred: Fri Dec 18 10:53:23 2020
 
-Error: void coupled_slabs::set_params(double W1, double W2, double separ, double lambda, double ncore1, double ncore2, double nsub)
-WGB Index = 2.100 is too small
+Error: void slab_fl_neff_A::neff_search(bool mode, bool wg_type)
+Search range is not correctly defined
+lower = 12.8501, upper = 12.8501
 

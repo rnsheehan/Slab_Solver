@@ -1198,9 +1198,9 @@ void slab_fl_neff_A::set_params(double width, double rib_width, double lambda, d
 			ncl = nclad;
 			ncl_sqr = template_funcs::DSQR(ncl);
 
-			nm = std::min(ns, ncl);
+			nm = std::max(ns, ncl);
 			nm_sqr = template_funcs::DSQR(nm);
-			
+
 			k = Two_PI / l;
 			k_sqr = template_funcs::DSQR(k); // k_{0}^{2}
 
@@ -1215,24 +1215,21 @@ void slab_fl_neff_A::set_params(double width, double rib_width, double lambda, d
 			etarcl = nr_sqr / ncl_sqr;
 
 			// Only difference between A, B cases is search space for neff and eigenequation
-			// Case A: lower = k ncl, upper = k nc, NA^{2} = nr^{2} - ncl^{2}
-			// Case B: lower = k nm, upper - k nc, NA^{2} = nc^{2} - nm^{2}
+			// Case A: lower = k max{ncl, ns}, upper = k nr, NA^{2} = nr^{2} - max{ncl, ns}^{2}
+			// Case B: lower = k nm, upper =k nc, NA^{2} = nc^{2} - nm^{2}
 
 			double x = nr_sqr - nm_sqr;
-			//double x = nc_sqr - nm_sqr;
 
 			na = sqrt(x); // numerical aperture
 
-			//V = (PI*(d+dr)*na) / l; // V-parameter
-			V = (PI*d*na) / l; // V-parameter
+			V = (PI * (dr) * na) / l; // V-parameter
 
 			// predicted number of modes
 			M = static_cast<int>( std::max( 1.0, ceil( (2.0*V / PI) ) ) );
 
-			lower = k * nm; // lower bound of search space
+			lower = k * nm; // lower bound of search space for case A
 
-			//upper = k * nc; // upper bound of search space
-			upper = k * nr; // upper bound of search space
+			upper = k * nr; // upper bound of search space for case A
 
 			w = k * SPEED_OF_LIGHT;
 
@@ -1273,7 +1270,7 @@ double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)
 	// https://xkcd.com/2034/
 
 	try{
-		//if (k_sqr_nc_sqr > k_sqr_nm_sqr) {
+		
 		if (k_sqr_nr_sqr > k_sqr_nm_sqr) {
 
 			double h, p, q, r, tmp;
@@ -1307,6 +1304,67 @@ double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)
 		}	
 	}
 	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+double slab_fl_neff_A::eigeneqn_aa(double x, bool t)
+{
+	// Dispersion equation corresponding to case a from Adams
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+
+	// equation re-written in an attempt to ameliorate effects of discontinuities arising from taking tangent of various items
+	// R. Sheehan 18 - 12 - 2020
+
+	try {
+
+		if (k_sqr_nr_sqr > k_sqr_nm_sqr) {
+
+			double h, p, q, r, tmp, Wh, psi, t1, t2, t3, t4;
+
+			double x_sqr = template_funcs::DSQR(x);
+
+			tmp = k_sqr_nc_sqr - x_sqr;
+			h = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = k_sqr_nr_sqr - x_sqr;
+			r = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_ns_sqr;
+			p = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			tmp = x_sqr - k_sqr_ncl_sqr;
+			q = (tmp > 0 ? sqrt(tmp) : 0.0);
+
+			Wh = d * h;
+			t1 = sin(Wh);
+			t2 = cos(Wh);
+
+
+			if (t) {//TE modes
+				t3 = (p / h);
+				t4 = (r / h);
+				psi = atan(q / r) - (dr * r);
+			}
+			else {//TM modes
+				t3 = etacs * (p / h);
+				t4 = etacr * (r / h);
+				psi = atan( etarcl * (q / r) ) - (dr * r);
+			}
+
+			return ( ( t1 - (t3 * t2) ) - ( (t3 * t1) + t2) * t4 * tan(psi) );
+		}
+		else {
+			std::string reason = "Error: double slab_fl_neff_A::eigeneqn_a(double x, int mm, bool t)\n";
+			reason += "Input parameters not correctly defined\n";
+			reason += "k_{0}^{2} n_{c}^{2} = " + template_funcs::toString(k_sqr_nc_sqr) + ", k_{0}^{2} n_{r}^{2} = " + template_funcs::toString(k_sqr_nr_sqr) + "\n";
+			return 0;
+		}
+	}
+	catch (std::invalid_argument& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
@@ -1358,10 +1416,10 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 				tol1 = 2.0*EPS*fabs(b) + 0.5*tol;
 				xm = 0.5*(c - b);
 				if (fabs(xm) <= tol1 || fb == 0.0) return b;
-				/*if(fabs(xm)<=tol1 || fb==0.0){
+				if(fabs(xm)<=tol1 || fb==0.0){
 				std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
 				return b;
-				}*/
+				}
 				if (fabs(e) >= tol1 && fabs(fa)>fabs(fb)) {
 					s = fb / fa;
 					if (a == c) {
@@ -1423,9 +1481,9 @@ void slab_fl_neff_A::neff_search(bool mode)
 	// Compute the waveguide mode effective indices based on given polarisation and wg_type
 	
 	// Case A => Field Oscillating in Core and Ridge
-	// For there to be a solution one has to have ns <= ncl < nr < nc
+	// For there to be a solution one has to have ns <= ncl < neff < nr
 
-	// Case A: lower = k ncl, upper = k nc, NA^{2} = nr^{2} - ncl^{2}
+	// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
 
 	try {
 		if (lower < upper) {
@@ -1467,6 +1525,120 @@ void slab_fl_neff_A::neff_search(bool mode)
 	}
 }
 
+void slab_fl_neff_A::output_disp_eqn_a(bool mode, std::string& storage_directory)
+{
+	// Output the case A four-layer slab dispersion equation
+	// R. Sheehan 18 - 12 - 2020
+
+	try {
+		if (lower < upper) {
+			int N = 101; 
+
+			// create array to hold dispersion equations for all the modes
+			std::vector< std::vector< double > > mat;
+
+			mat.resize(M + 2); // We want to output M solutions plus the corresponding positions
+
+			// store the positions at which the eigeneqn_a will be evaluated
+			double dx = (upper - lower) / (static_cast<double>(N - 1));
+
+			double xi = lower;
+
+			mat[0].resize(N + 2);
+
+			for (int j = 1; j <= N; j++) {
+				mat[0][j] = xi;
+				xi += dx;
+			}
+
+			// compute the values of the dispersion equation for each of the expected modes
+			for (int i = 1; i <= M; i++) {
+				mat[i].resize(N + 2);
+				for (int j = 1; j <= N; j++) {
+					mat[i][j] = eigeneqn_a(mat[0][j], i - 1, mode);
+				}
+			}
+
+			// Output the computed dispersion equations
+			std::string pol = (mode ? "TE" : "TM");
+			std::string filename = storage_directory + pol + "_Disp_Eqns_FL_A.txt";
+			std::ofstream write;
+			
+			write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+			if (write.is_open()) {
+
+				for (int i = 1; i <= N; i++) {
+					for (int j = 0; j < (M + 1); j++)
+						if (j == M)
+							write << std::setprecision(20) << mat[j][i];
+						else
+							write << std::setprecision(20) << mat[j][i] << " , ";
+					write << "\n";
+				}
+
+				write.close();
+			}
+
+			mat.clear(); 
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_A::output_disp_eqn(bool mode)\n";
+			reason += "Search range is not correctly defined\n";
+			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+			throw std::range_error(reason);
+		}
+	}
+	catch (std::range_error& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_neff_A::output_disp_eqn_aa(bool mode, std::string& storage_directory)
+{
+	// Output the case A four-layer slab dispersion equation
+	// R. Sheehan 18 - 12 - 2020
+
+	try {
+		if (lower < upper) {
+			int N = 201;
+
+			// store the positions at which the eigeneqn_a will be evaluated
+			double dx = (upper - lower) / (static_cast<double>(N - 1));
+
+			double xi = lower + dx;
+
+			// Output the computed dispersion equations
+			std::string pol = (mode ? "TE" : "TM");
+			std::string filename = storage_directory + pol + "_Disp_Eqns_FL_AA.txt";
+			std::ofstream write;
+
+			write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+			if (write.is_open()) {
+
+				for (int i = 1; i <= N - 2; i++) {
+					write << std::setprecision(10) << xi << " , " << eigeneqn_aa(xi, mode) << "\n"; 
+					xi += dx; 
+				}
+
+				write.close();
+			}
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_A::output_disp_eqn(bool mode)\n";
+			reason += "Search range is not correctly defined\n";
+			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+			throw std::range_error(reason);
+		}
+	}
+	catch (std::range_error& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
 // slab_fl_mode_A is used to compute the mode profile in the four layer slab case A
 
 slab_fl_mode_A::slab_fl_mode_A()
@@ -1487,6 +1659,10 @@ void slab_fl_mode_A::compute_neff(bool mode)
 
 	std::string pol = (mode ? "TE" : "TM");
 
+	std::cout << "Search Space: \n";
+	std::cout << "lower: " << lower << " < beta < upper: " << upper << "\n"; 
+	std::cout << "lower: " << nm << " < neff < upper: " << nr << "\n"; 
+	std::cout << "There are " << M << " predicted modes\n"; 
 	std::cout << "There are " << nbeta(mode) << " calculated " + pol + " modes\n";
 	for (int i = 0; i<static_cast<int>(nbeta(mode)); i++) {
 		std::cout << "beta[" << i + 1 << "] = " << std::setprecision(6) << _beta(i, mode) << " , n_{eff} = " << _beta(i, mode) / k << "\n";
@@ -1501,7 +1677,7 @@ double slab_fl_mode_A::phase(int i, bool t)
 	try {
 		if (nbeta(t) > 0) {
 			if (i<0 || i > nbeta(t)) {
-				throw std::range_error("Error: double slab_fl_mode_B::phase(int i, bool t)\n Attempting to access arrays out of range\n");
+				throw std::range_error("Error: double slab_fl_mode_A::phase(int i, bool t)\n Attempting to access arrays out of range\n");
 				return 0;
 			}
 			else {
@@ -1549,6 +1725,7 @@ double slab_fl_mode_A::TE_TM(double x, int i, bool mode)
 				double hh = h(i, mode);
 				double rr = rA(i, mode);
 				double wh = d * hh;
+				double Dr = dr * rr; 
 				double qq = q(i, mode);
 				double pp = p(i, mode);
 				double ph = phase(i, mode);
@@ -1567,7 +1744,7 @@ double slab_fl_mode_A::TE_TM(double x, int i, bool mode)
 				}
 				else {
 					// x > D
-					return ((cos((rr * dr) + ph) / cos(ph))*exp(qq * (dr - x)));
+					return ((cos( Dr + ph) / cos(ph) )*exp(qq * (dr - x)));
 				}
 			}
 		}
@@ -1641,17 +1818,8 @@ void slab_fl_mode_A::output_modes(bool mode, int N, double Lx, std::string& stor
 
 		}
 
-		// output the sine-cosine form of the dispersion equation
-		/*double db = ((upper - lower) / (99));
-
-		filename = storage_directory + pol + "_Dispersion_Eqn.txt";
-		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
-
-		for (int i = 1; i < 99; i++) {
-			write << lower + i * db << " , " << std::setprecision(20) << eigeneqn_a(lower + i * db, 0, mode) << "\n";
-		}
-
-		write.close();*/
+		// output the dispersion equation for the case A four layer slab
+		output_disp_eqn_aa(mode, storage_directory); 
 	}
 }
 

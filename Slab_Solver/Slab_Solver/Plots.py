@@ -28,11 +28,13 @@ def mode_plot():
 
     try:
         #filename = "TE_Mode_Profiles.txt"
-        filename = "Coupled_Mode_Profiles.txt"
+        #filename = "Coupled_Mode_Profiles.txt"
         #filename = "integrate_KAA_field_values.txt"
         #filename = "integrate_KBB_field_values.txt"
         #filename = "integrate_KAB_field_values.txt"
         #filename = "integrate_KBA_field_values.txt"
+        #filename = "TM_Mode_Profiles_FL_A.txt"
+        filename = "TM_Disp_Eqns_FL_A.txt"
             
         if glob.glob(filename):
             # import the dataset
@@ -87,7 +89,8 @@ def disp_eqn_plot():
     ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
 
     try:
-        filename = "TE_Dispersion_Eqn.txt"
+        #filename = "TE_Dispersion_Eqn.txt"
+        filename = "TE_Disp_Eqns_FL_AA.txt"
             
         if glob.glob(filename):
             # import the dataset
@@ -261,7 +264,7 @@ if __name__ == '__main__':
     
     print(pwd)
     
-    #disp_eqn_plot()
+    disp_eqn_plot()
     
     #mode_plot()
     
@@ -269,5 +272,5 @@ if __name__ == '__main__':
     
     #coupling_ampl()
     
-    for i in range(0, 120, 10):
-        coupled_fields(10, i)
+    #for i in range(0, 120, 10):
+    #    coupled_fields(10, i)
