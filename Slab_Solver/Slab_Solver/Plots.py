@@ -33,8 +33,8 @@ def mode_plot():
         #filename = "integrate_KBB_field_values.txt"
         #filename = "integrate_KAB_field_values.txt"
         #filename = "integrate_KBA_field_values.txt"
-        #filename = "TM_Mode_Profiles_FL_A.txt"
-        filename = "TM_Disp_Eqns_FL_A.txt"
+        filename = "TE_Mode_Profiles_FL_A.txt"
+        #filename = "TM_Disp_Eqns_FL_A.txt"
             
         if glob.glob(filename):
             # import the dataset
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     
     disp_eqn_plot()
     
-    #mode_plot()
+    mode_plot()
     
     #chuang_plots()
     

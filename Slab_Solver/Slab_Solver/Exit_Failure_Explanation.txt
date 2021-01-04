@@ -1,8 +1,8 @@
 Program Exit Explanation
 
-Error occurred: Fri Dec 18 10:53:23 2020
+Error occurred: Mon Jan  4 13:10:45 2021
 
-Error: void slab_fl_neff_A::neff_search(bool mode, bool wg_type)
+Error: void slab_fl_neff_A::output_disp_eqn(bool mode)
 Search range is not correctly defined
 lower = 12.8501, upper = 12.8501
 

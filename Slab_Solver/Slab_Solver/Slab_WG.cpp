@@ -1343,7 +1343,6 @@ double slab_fl_neff_A::eigeneqn_aa(double x, bool t)
 			t1 = sin(Wh);
 			t2 = cos(Wh);
 
-
 			if (t) {//TE modes
 				t3 = (p / h);
 				t4 = (r / h);
@@ -1393,7 +1392,8 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 
 			double a = std::min(x1, x2), b = std::max(x1, x2), c = std::max(x1, x2), d, e, min1, min2;
 			double fc, p, q, r, s, tol1, xm;
-			double fa = eigeneqn_a(a, t, mm), fb = eigeneqn_a(b, t, mm);
+			//double fa = eigeneqn_a(a, t, mm), fb = eigeneqn_a(b, t, mm);
+			double fa = eigeneqn_aa(a, t), fb = eigeneqn_aa(b, t);
 
 			if ((fa>0.0 && fb>0.0) || (fa<0.0 && fb<0.0)) {
 				std::cerr << "Root must be bracketed in zbrent\n";
@@ -1417,8 +1417,8 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 				xm = 0.5*(c - b);
 				if (fabs(xm) <= tol1 || fb == 0.0) return b;
 				if(fabs(xm)<=tol1 || fb==0.0){
-				std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
-				return b;
+					std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
+					return b;
 				}
 				if (fabs(e) >= tol1 && fabs(fa)>fabs(fb)) {
 					s = fb / fa;
@@ -1457,7 +1457,8 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 				else {
 					b += template_funcs::SIGN(tol1, xm);
 				}
-				fb = eigeneqn_a(b, t, mm);
+				//fb = eigeneqn_a(b, t, mm);
+				fb = eigeneqn_aa(b, t);
 			}
 			std::cerr << "Maximum number of iterations exceeded in zbrent\n";
 			return 0.0;
@@ -1476,30 +1477,83 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 	}
 }
 
-void slab_fl_neff_A::neff_search(bool mode)
-{
-	// Compute the waveguide mode effective indices based on given polarisation and wg_type
-	
-	// Case A => Field Oscillating in Core and Ridge
-	// For there to be a solution one has to have ns <= ncl < neff < nr
+//void slab_fl_neff_A::neff_search(bool mode)
+//{
+//	// Compute the waveguide mode effective indices based on given polarisation and wg_type
+//	
+//	// Case A => Field Oscillating in Core and Ridge
+//	// For there to be a solution one has to have ns <= ncl < neff < nr
+//
+//	// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+//
+//	try {
+//		if (lower < upper) {
+//		
+//			int m;
+//			double b;
+//
+//			std::vector<double> vec;
+//
+//			for (m = 0; m < M; m++) {
+//				b = zbrent(lower, upper, EPS, mode, m);
+//
+//				if (b>lower && b<upper) {
+//					vec.push_back(b);
+//				}
+//
+//			}
+//
+//			if (mode) {
+//				betaE = vec;
+//			}
+//			else {
+//				betaH = vec;
+//			}
+//
+//			vec.clear();
+//		}
+//		else {
+//			std::string reason = "Error: void slab_fl_neff_A::neff_search(bool mode, bool wg_type)\n";
+//			reason += "Search range is not correctly defined\n";
+//			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+//			throw std::range_error(reason);
+//		}	
+//	}
+//	catch (std::range_error &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
-	// Case A: lower = k ncl, upper = k nr, NA^{2} = nr^{2} - ncl^{2}
+void slab_fl_neff_A::neff_search(bool mode) 
+{
+	// Alternative neff_search based on fuinding roots of eigeneqn_aa
+	// R. Sheehan 4 - 1 - 2021
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have nm < neff < nr
+
+	// Case A: lower = k nm, upper = k nr, NA^{2} = nr^{2} - nm^{2}
+
+	// Roots must be bracket before proceeding
 
 	try {
-		if (lower < upper) {
-		
-			int m;
+		bool c1 = lower < upper ? true : false; 
+		bool c2 = brackets.size() > 0 ? true : false; 
+		bool c10 = c1 && c2; 
+		if (c10) {
+			int m = 0;
 			double b;
 
 			std::vector<double> vec;
 
-			for (m = 0; m < M; m++) {
-				b = zbrent(lower, upper, EPS, mode, m);
+			for (int i = static_cast<int>( brackets.size() ) - 1; i >= 0 ; i--) {
 
-				if (b>lower && b<upper) {
+				b = zbrent(brackets[i].get_x_lower(), brackets[i].get_x_upper(), EPS, mode, m);
+
+				if (b > lower && b < upper) {
 					vec.push_back(b);
 				}
-
 			}
 
 			if (mode) {
@@ -1510,16 +1564,80 @@ void slab_fl_neff_A::neff_search(bool mode)
 			}
 
 			vec.clear();
-
 		}
 		else {
-			std::string reason = "Error: void slab_fl_neff_A::neff_search(bool mode, bool wg_type)\n";
+			std::string reason = "Error: void slab_fl_neff_A::neff_search_aa(bool mode, bool wg_type)\n";
+			if(!c1) reason += "Search range is not correctly defined\n";
+			if(!c1) reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+			if (!c2) reason += "Bracketing intervals for roots have not been found\n"; 
+			throw std::range_error(reason);
+		}
+	}
+	catch (std::range_error& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_neff_A::bracket_roots(bool mode, bool loud)
+{
+	// step through the search space and see what intervals contain roots of the dispersion equation
+	// Bracketing algorithm taken from earlier work https://github.com/rnsheehan/find_roots_1D
+	// R. Sheehan 4 - 1 - 2021
+
+	try {
+		if (lower < upper) {
+		
+			int N = 201; // divide the search space into a number of sub-intervals
+
+			// compute the step-size in the search space
+			double dx = (upper - lower) / (static_cast<double>(N - 1));
+
+			double xl = lower + dx;
+			double xu = xl + dx; 
+			double fl, fu; 
+
+			// remove any stored intervals
+			brackets.clear(); 
+
+			for (int i = 1; i <= N - 2; i++) {
+
+				// Evaluate the dispersion equation at the interval endpoints
+				if (i == 1) {
+					fl = template_funcs::Signum( eigeneqn_aa(xl, mode) );
+				}
+				else {
+					fl = fu; 
+				}
+
+				fu = template_funcs::Signum( eigeneqn_aa(xu, mode) );
+
+				// Perform the bisection test
+				if (fl * fu < 0.0) {
+					// the sub-interval contains a root so it is stored
+					brackets.push_back(interval(xl, xu));
+				}
+
+				// update the endpoints of the sub-interval
+				xl = xu;
+				xu += dx; 
+			}
+
+			if (loud && brackets.size() > 0) {
+				std::cout << "The search space contains " << brackets.size() << " roots\n"; 
+				for (size_t j = 0; j < brackets.size(); j++) {
+					std::cout << brackets[j].get_x_lower() << " , " << brackets[j].get_x_upper() << "\n"; 
+				}
+			}
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_A::bracket_roots(bool mode)\n";
 			reason += "Search range is not correctly defined\n";
 			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
 			throw std::range_error(reason);
-		}	
+		}
 	}
-	catch (std::range_error &e) {
+	catch (std::range_error& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
@@ -1787,15 +1905,26 @@ void slab_fl_mode_A::output_modes(bool mode, int N, double Lx, std::string& stor
 
 		mat[0].resize(N + 2);
 
+		// store the position values in the array
 		for (int j = 1; j <= N; j++) {
 			mat[0][j] = xi;
 			xi += dx;
 		}
 
+		// store the computed field values in the array
 		for (int i = 1; i <= nbeta(mode); i++) {
 			mat[i].resize(N + 2);
 			for (int j = 1; j <= N; j++) {
 				mat[i][j] = TE_TM(mat[0][j], i - 1, mode);
+			}
+		}
+
+		// normalise the field values to have max-val = 1
+		for (int i = 1; i <= nbeta(mode); i++) {
+			// determine the norm of the mode stored in row i
+			double norm = vecut::inf_norm(mat[i]); 
+			for (int j = 1; j <= N; j++) {
+				mat[i][j] /= norm;
 			}
 		}
 

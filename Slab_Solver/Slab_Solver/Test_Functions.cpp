@@ -144,10 +144,10 @@ void testing::fl_slab_wg_mode_calc()
 
 	// Case A => Field Oscillating in Core and Ridge
 	// For there to be a solution one has to have ns <= ncl < nr < nc
-	W = 1.0; Wr = 2.0; WL = 1.55; 
+	W = 1.0; Wr = 1.5; WL = 1.55; 
 	//W = 0.5; Wr = 0.5; WL = 1.55;
 	//W = 1.0; Wr = 0.5; WL = 1.55;
-	Nc = 3.38; Ns = 1.0; Nr = 3.17; Ncl = 1.0;
+	Nc = 3.38; Ns = 3.0; Nr = 3.17; Ncl = 1.0;
 
 	// Case B: Field Oscillating in Core Only
 	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
@@ -169,17 +169,18 @@ void testing::fl_slab_wg_mode_calc()
 
 	fl_obj.set_params(W, Wr, WL, Nc, Ns, Ncl, Nr);
 
-	fl_obj.compute_neff(pol);
+	fl_obj.bracket_roots(pol, true); 
+
+	fl_obj.compute_neff(pol); 
 
 	// compute field value at x = 0.0
-	double fval = fl_obj.TE_TM(0.0, 0, pol); 
+	std::cout << "\nField value at x = 0: " << fl_obj.TE_TM(0.0, 0, pol) << "\n";
 
-	std::cout << "\nField value at x = 0: " << fval << "\n";
-
-	//int N = 101;
-	//double Lz = 3.5 * (W + Wr);
-	//std::string stor = "";
-	//fl_obj.output_modes(pol, N, Lz, stor); 
+	int N = 201;
+	double Lz = 3.5 * (W + Wr);
+	std::string stor = "";
+	
+	fl_obj.output_modes(pol, N, Lz, stor);
 }
 
 void testing::coupled_slab_wg_calc()

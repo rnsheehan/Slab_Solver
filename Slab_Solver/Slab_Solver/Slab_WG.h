@@ -162,12 +162,19 @@ public:
 	// Methods
 	void set_params(double width, double rib_width, double lambda, double ncore, double nsub, double nclad, double nrib);
 
+	//void neff_search(bool mode); 
 	void neff_search(bool mode); 
+
+	// try and bracket the roots hat exist in the search space
+	// search each bracket for a root
+	void bracket_roots(bool mode, bool loud = false);
 
 	void output_disp_eqn_a(bool mode, std::string& storage_directory);
 	void output_disp_eqn_aa(bool mode, std::string& storage_directory);
 
 private:
+	std::vector<interval> brackets; 
+
 	double eigeneqn_a(double x, int mm, bool t);
 	double eigeneqn_aa(double x, bool t);
 
