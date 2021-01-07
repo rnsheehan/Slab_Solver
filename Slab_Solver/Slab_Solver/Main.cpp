@@ -16,7 +16,9 @@ int main()
 
 	//testing::fl_slab_wg_neff_calc(); 
 
-	testing::fl_slab_wg_mode_calc(); 
+	//testing::fl_slab_wg_mode_calc_a(); 
+
+	testing::fl_slab_wg_mode_calc_b(); 
 
 	//testing::coupled_slab_wg_calc(); 
 

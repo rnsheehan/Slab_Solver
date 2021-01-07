@@ -1392,7 +1392,7 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 
 			double a = std::min(x1, x2), b = std::max(x1, x2), c = std::max(x1, x2), d, e, min1, min2;
 			double fc, p, q, r, s, tol1, xm;
-			//double fa = eigeneqn_a(a, t, mm), fb = eigeneqn_a(b, t, mm);
+			//double fa = eigeneqn_a(a, mm, t), fb = eigeneqn_a(b, mm, t);
 			double fa = eigeneqn_aa(a, t), fb = eigeneqn_aa(b, t);
 
 			if ((fa>0.0 && fb>0.0) || (fa<0.0 && fb<0.0)) {
@@ -1457,7 +1457,7 @@ double slab_fl_neff_A::zbrent(double x1, double x2, double tol, bool t, int mm)
 				else {
 					b += template_funcs::SIGN(tol1, xm);
 				}
-				//fb = eigeneqn_a(b, t, mm);
+				//fb = eigeneqn_a(b, mm, t);
 				fb = eigeneqn_aa(b, t);
 			}
 			std::cerr << "Maximum number of iterations exceeded in zbrent\n";
@@ -2039,7 +2039,7 @@ void slab_fl_neff_B::set_params(double width, double rib_width, double lambda, d
 			V = (PI*d*na) / l; // V-parameter
 
 			// predicted number of modes
-			M = static_cast<int>(std::max(1.0, ceil((2.0*V / PI))));
+			M = static_cast<int>(std::max(1.0, floor((2.0*V / PI))));
 
 			lower = k * nm; // lower bound of search space
 
@@ -2098,7 +2098,7 @@ double slab_fl_neff_B::eigeneqn_b(double x, int mm, bool t)
 
 			tmp = x_sqr - k_sqr_ncl_sqr;
 			q = (tmp > 0 ? sqrt(tmp) : 0.0);
-			//if (!t) q *= etarcl; // multiply q by etarcl in the case of TM polarisation
+			if (!t) q *= etarcl; // multiply q by etarcl in the case of TM polarisation
 
 			tmp = x_sqr - k_sqr_nr_sqr;
 			r = (tmp > 0 ? sqrt(tmp) : 0.0);
@@ -2154,7 +2154,7 @@ double slab_fl_neff_B::zbrent(double x1, double x2, double tol, bool t, int mm)
 
 			double a = std::min(x1, x2), b = std::max(x1, x2), c = std::max(x1, x2), d, e, min1, min2;
 			double fc, p, q, r, s, tol1, xm;
-			double fa = eigeneqn_b(a, t, mm), fb = eigeneqn_b(b, t, mm);
+			double fa = eigeneqn_b(a, mm, t), fb = eigeneqn_b(b, mm, t);
 
 			if ((fa>0.0 && fb>0.0) || (fa<0.0 && fb<0.0)) {
 				std::cerr << "Root must be bracketed in zbrent\n";
@@ -2177,10 +2177,10 @@ double slab_fl_neff_B::zbrent(double x1, double x2, double tol, bool t, int mm)
 				tol1 = 2.0*EPS*fabs(b) + 0.5*tol;
 				xm = 0.5*(c - b);
 				if (fabs(xm) <= tol1 || fb == 0.0) return b;
-				/*if(fabs(xm)<=tol1 || fb==0.0){
-				std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
-				return b;
-				}*/
+				if(fabs(xm)<=tol1 || fb==0.0){
+					std::cout<<"Brent's Method converged in "<<iter<<" iterations\n";
+					return b;
+				}
 				if (fabs(e) >= tol1 && fabs(fa)>fabs(fb)) {
 					s = fb / fa;
 					if (a == c) {
@@ -2218,7 +2218,7 @@ double slab_fl_neff_B::zbrent(double x1, double x2, double tol, bool t, int mm)
 				else {
 					b += template_funcs::SIGN(tol1, xm);
 				}
-				fb = eigeneqn_b(b, t, mm);
+				fb = eigeneqn_b(b, mm, t);
 			}
 			std::cerr << "Maximum number of iterations exceeded in zbrent\n";
 			return 0.0;
@@ -2282,6 +2282,76 @@ void slab_fl_neff_B::neff_search(bool mode)
 		}
 	}
 	catch (std::range_error &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void slab_fl_neff_B::output_disp_eqn_b(bool mode, std::string& storage_directory)
+{
+	// Output the case A four-layer slab dispersion equation
+	// R. Sheehan 18 - 12 - 2020
+
+	try {
+		if (lower < upper) {
+			int N = 101;
+
+			// create array to hold dispersion equations for all the modes
+			std::vector< std::vector< double > > mat;
+
+			mat.resize(M + 2); // We want to output M solutions plus the corresponding positions
+
+			// store the positions at which the eigeneqn_a will be evaluated
+			double dx = (upper - lower) / (static_cast<double>(N - 1));
+
+			double xi = lower;
+
+			mat[0].resize(N + 2);
+
+			for (int j = 1; j <= N; j++) {
+				mat[0][j] = xi;
+				xi += dx;
+			}
+
+			// compute the values of the dispersion equation for each of the expected modes
+			for (int i = 1; i <= M; i++) {
+				mat[i].resize(N + 2);
+				for (int j = 1; j <= N; j++) {
+					mat[i][j] = eigeneqn_b(mat[0][j], i - 1, mode);
+				}
+			}
+
+			// Output the computed dispersion equations
+			std::string pol = (mode ? "TE" : "TM");
+			std::string filename = storage_directory + pol + "_Disp_Eqns_FL_B.txt";
+			std::ofstream write;
+
+			write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+
+			if (write.is_open()) {
+
+				for (int i = 1; i <= N; i++) {
+					for (int j = 0; j < (M + 1); j++)
+						if (j == M)
+							write << std::setprecision(20) << mat[j][i];
+						else
+							write << std::setprecision(20) << mat[j][i] << " , ";
+					write << "\n";
+				}
+
+				write.close();
+			}
+
+			mat.clear();
+		}
+		else {
+			std::string reason = "Error: void slab_fl_neff_B::output_disp_eqn(bool mode)\n";
+			reason += "Search range is not correctly defined\n";
+			reason += "lower = " + template_funcs::toString(lower, 4) + ", upper = " + template_funcs::toString(upper, 4) + "\n";
+			throw std::range_error(reason);
+		}
+	}
+	catch (std::range_error& e) {
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
@@ -2403,12 +2473,16 @@ double slab_fl_mode_B::phase(int i, bool t)
 				if (t) {
 					double qq = q(i, t);
 					double rr = rB(i, t); 
-					return -1.0*( ( dr * rr ) + atanh(qq/rr) );
+					double arg = qq / rr; 
+					double atval = fabs(arg) > 1 ? PI_2 : atanh(arg); 
+					return -1.0*( ( dr * rr ) + atval );
 				}
 				else {
 					double qq = q(i, t);
 					double rr = rB(i, t);
-					return -1.0*( ( dr * rr ) + atanh( (etarcl * qq) / rr) );
+					double arg = ( (etarcl * qq) / rr);
+					double atval = fabs(arg) > 1 ? PI_2 : atanh(arg);
+					return -1.0*( ( dr * rr ) + atval);
 				}
 			}
 		}
@@ -2449,14 +2523,14 @@ double slab_fl_mode_B::TE_TM(double x, int i, bool mode)
 				double qq = q(i, mode);
 				double pp = p(i, mode); 
 				double ph = phase(i, mode); 
-				double rrhh = mode ? (rr / hh) * tan(ph) : (rr / hh) * tan(ph) * etacr;
+				double rrhh = mode ? (rr / hh) * tanh(ph) : (rr / hh) * tanh(ph) * etacr;
 				if (x < -d) {
 					// x < -W
-					return ( ( cos(wh) + ( rrhh * sin(wh) ) )*exp( pp * ( x + d ) ) );
+					return ( ( cos(wh) - ( rrhh * sin(wh) ) )*exp( pp * ( x + d ) ) );
 				}
 				else if (x >= -d && x <= 0) {
 					// -W < x < 0
-					return ( cos( hh * x ) - rrhh * sin( hh * x ) ); 
+					return ( cos( hh * x ) + rrhh * sin( hh * x ) ); 
 				}
 				else if (x > 0 && x <= dr) {
 					// 0 < x < D
@@ -2538,17 +2612,7 @@ void slab_fl_mode_B::output_modes(bool mode, int N, double Lx, std::string& stor
 
 		}
 
-		// output the sine-cosine form of the dispersion equation
-		/*double db = ((upper - lower) / (99));
-
-		filename = storage_directory + pol + "_Dispersion_Eqn.txt";
-		write.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
-
-		for (int i = 1; i < 99; i++) {
-			write << lower + i * db << " , " << std::setprecision(20) << eigeneqn_a(lower + i * db, 0, mode) << "\n";
-		}
-
-		write.close();*/
+		output_disp_eqn_b(mode, storage_directory);
 	}
 }
 

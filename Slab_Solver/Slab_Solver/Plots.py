@@ -34,7 +34,8 @@ def mode_plot():
         #filename = "integrate_KAB_field_values.txt"
         #filename = "integrate_KBA_field_values.txt"
         filename = "TE_Mode_Profiles_FL_A.txt"
-        #filename = "TM_Disp_Eqns_FL_A.txt"
+        #filename = "TE_Mode_Profiles_FL_B.txt"
+        #filename = "TE_Disp_Eqns_FL_B.txt"
             
         if glob.glob(filename):
             # import the dataset
@@ -264,7 +265,7 @@ if __name__ == '__main__':
     
     print(pwd)
     
-    disp_eqn_plot()
+    #disp_eqn_plot()
     
     mode_plot()
     

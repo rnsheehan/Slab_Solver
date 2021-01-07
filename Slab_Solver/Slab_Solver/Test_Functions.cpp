@@ -133,7 +133,7 @@ void testing::fl_slab_wg_neff_calc()
 	fl_obj.compute_neff(TM); 
 }
 
-void testing::fl_slab_wg_mode_calc()
+void testing::fl_slab_wg_mode_calc_a()
 {
 	// Compute the mode profile in a four layer slab waveguide
 	// R. Sheehan 15 - 12 - 2020
@@ -180,6 +180,52 @@ void testing::fl_slab_wg_mode_calc()
 	double Lz = 3.5 * (W + Wr);
 	std::string stor = "";
 	
+	fl_obj.output_modes(pol, N, Lz, stor);
+}
+
+void testing::fl_slab_wg_mode_calc_b()
+{
+	// Compute the mode profile in a four layer slab waveguide
+	// R. Sheehan 15 - 12 - 2020
+
+	bool pol = TE;
+
+	double W, Wr, WL, Nc, Ns, Nr, Ncl;
+
+	// Case A => Field Oscillating in Core and Ridge
+	// For there to be a solution one has to have ns <= ncl < nr < nc
+	W = 1.0; Wr = 1.5; WL = 1.55;
+	//W = 0.5; Wr = 0.5; WL = 1.55;
+	//W = 1.0; Wr = 0.5; WL = 1.55;
+	Nc = 3.38; Ns = 2.0; Nr = 3.17; Ncl = 1.0;
+
+	// Case B: Field Oscillating in Core Only
+	// For there to be a solution one has to have ncl < nm < nc, where nm = Max(nr,ns)
+	//W = 0.5; Wr = 0.5; WL = 1.55; // n_{TM} = 3.274464
+	//W = 0.5; Wr = 1.0; WL = 1.55; // n_{TM} = 3.27562
+	//W = 0.6; Wr = 0.4; WL = 1.55; // n_{TM} = 3.29152
+	//W = 0.6; Wr = 0.9; WL = 1.55; // n_{TM} = 3.293
+	//Ns = 3.17; Nc = 3.38; Nr = 3.17; Ncl = 1.0;
+
+	//W = 0.45; Wr = 0.3; WL = 1.55; // no modes present case B
+	//Ns = 3.17; Nc = 3.38; Nr = 3.341; Ncl = 1.0; // no modes present case B
+
+	//W = 0.6; Wr = 0.5; WL = 1.55;
+	//Ns = 3.17; Nc = 3.38; Nr = 3.19; Ncl = 1.0; 
+
+	slab_fl_mode_B fl_obj;
+
+	fl_obj.set_params(W, Wr, WL, Nc, Ns, Ncl, Nr);
+
+	fl_obj.compute_neff(pol);
+
+	// compute field value at x = 0.0
+	std::cout << "\nField value at x = 0: " << fl_obj.TE_TM(0.0, 0, pol) << "\n";
+
+	int N = 201;
+	double Lz = 3.5 * (W + Wr);
+	std::string stor = "";
+
 	fl_obj.output_modes(pol, N, Lz, stor);
 }
 

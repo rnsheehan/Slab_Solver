@@ -224,6 +224,8 @@ public:
 
 	void neff_search(bool mode);
 
+	void output_disp_eqn_b(bool mode, std::string& storage_directory); 
+
 	void report(bool mode);
 
 	int get_nmodes(bool mode); // return the number of computed modes
